@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { Swords, Upload, BarChart3, Target, ArrowRight } from 'lucide-react';
+import { Swords, Upload, BarChart3, Target, ArrowRight, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { VideoUpload } from '@/components/VideoUpload';
 import { Link } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 
 const Index = () => {
+  const { user, signOut } = useAuth();
   const [showUpload, setShowUpload] = useState(false);
 
   return (
@@ -30,23 +32,34 @@ const Index = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button 
-                variant="hero" 
-                size="lg"
-                onClick={() => setShowUpload(true)}
-                className="text-lg px-8"
-              >
-                <Upload className="mr-2 h-5 w-5" />
-                Upload Video
-              </Button>
-              
-              <Button variant="outline" size="lg" asChild className="text-lg px-8">
-                <Link to="/dashboard">
-                  <BarChart3 className="mr-2 h-5 w-5" />
-                  View Dashboard
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
+              {user ? (
+                <>
+                  <Button 
+                    variant="hero" 
+                    size="lg"
+                    onClick={() => setShowUpload(true)}
+                    className="text-lg px-8"
+                  >
+                    <Upload className="mr-2 h-5 w-5" />
+                    Upload Video
+                  </Button>
+                  
+                  <Button variant="outline" size="lg" asChild className="text-lg px-8">
+                    <Link to="/dashboard">
+                      <BarChart3 className="mr-2 h-5 w-5" />
+                      View Dashboard
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                </>
+              ) : (
+                <Button variant="hero" size="lg" asChild className="text-lg px-8">
+                  <Link to="/auth">
+                    <LogIn className="mr-2 h-5 w-5" />
+                    Sign In to Get Started
+                  </Link>
+                </Button>
+              )}
             </div>
           </div>
         </div>
