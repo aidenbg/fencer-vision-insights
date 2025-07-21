@@ -6,9 +6,11 @@ import { Slider } from '@/components/ui/slider';
 interface VideoPlayerProps {
   videoUrl: string;
   className?: string;
+  viewMode?: 'original' | 'detections' | 'detections-poses';
+  onViewModeChange?: (mode: 'original' | 'detections' | 'detections-poses') => void;
 }
 
-export const VideoPlayer = ({ videoUrl, className = "" }: VideoPlayerProps) => {
+export const VideoPlayer = ({ videoUrl, className = "", viewMode = 'original', onViewModeChange }: VideoPlayerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -76,6 +78,35 @@ export const VideoPlayer = ({ videoUrl, className = "" }: VideoPlayerProps) => {
 
   return (
     <div className={`bg-card rounded-lg overflow-hidden ${className}`}>
+      {/* View Mode Selector */}
+      {onViewModeChange && (
+        <div className="p-4 border-b">
+          <div className="flex gap-2">
+            <Button 
+              variant={viewMode === 'original' ? 'default' : 'outline'} 
+              size="sm"
+              onClick={() => onViewModeChange('original')}
+            >
+              Original
+            </Button>
+            <Button 
+              variant={viewMode === 'detections' ? 'default' : 'outline'} 
+              size="sm"
+              onClick={() => onViewModeChange('detections')}
+            >
+              + Detections
+            </Button>
+            <Button 
+              variant={viewMode === 'detections-poses' ? 'default' : 'outline'} 
+              size="sm"
+              onClick={() => onViewModeChange('detections-poses')}
+            >
+              + Poses
+            </Button>
+          </div>
+        </div>
+      )}
+      
       <video
         ref={videoRef}
         src={videoUrl}

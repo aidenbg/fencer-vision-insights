@@ -15,7 +15,7 @@ const Upload = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [showUploadForm, setShowUploadForm] = useState(false);
+  const [viewMode, setViewMode] = useState<'original' | 'detections' | 'detections-poses'>('original');
 
   const handleVideoUpload = async (videoUrl: string) => {
     setUploadedVideo(videoUrl);
@@ -86,12 +86,6 @@ const Upload = () => {
     }
   };
 
-  const handleVideoSelect = (videoUrl: string, videoId: string) => {
-    setUploadedVideo(videoUrl);
-    setCurrentVideoId(videoId);
-    setAnalysisComplete(true);
-    setShowUploadForm(false);
-  };
 
   const mockDetections = {
     objects: [
@@ -130,41 +124,23 @@ const Upload = () => {
           <div className="space-y-8">
             <div className="text-center">
               <h1 className="text-3xl font-bold mb-4">Fencing Video Analysis</h1>
-              <p className="text-muted-foreground mb-8">Upload new videos or view previous analyses</p>
-              
-              <div className="flex justify-center gap-4 mb-8">
-                <Button 
-                  variant={showUploadForm ? "default" : "outline"} 
-                  onClick={() => setShowUploadForm(true)}
-                >
-                  <UploadIcon className="mr-2 h-4 w-4" />
-                  Upload New Video
-                </Button>
-                <Button 
-                  variant={!showUploadForm ? "default" : "outline"} 
-                  onClick={() => setShowUploadForm(false)}
-                >
-                  View History
-                </Button>
-              </div>
+              <p className="text-muted-foreground mb-8">Upload your video to analyze fencing techniques and performance</p>
             </div>
 
-            {showUploadForm ? (
-              <div className="max-w-2xl mx-auto">
-                <VideoUpload onUpload={handleVideoUpload} />
-              </div>
-            ) : (
-              <div className="max-w-4xl mx-auto">
-                <UploadHistory onVideoSelect={handleVideoSelect} />
-              </div>
-            )}
+            <div className="max-w-2xl mx-auto">
+              <VideoUpload onUpload={handleVideoUpload} />
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Video Section */}
             <div>
-              <h2 className="text-2xl font-bold mb-4">Uploaded Video</h2>
-              <VideoPlayer videoUrl={uploadedVideo} />
+              <h2 className="text-2xl font-bold mb-4">Video Analysis</h2>
+              <VideoPlayer 
+                videoUrl={uploadedVideo} 
+                viewMode={viewMode}
+                onViewModeChange={setViewMode}
+              />
               
               {/* Analysis Progress */}
               {isAnalyzing && (
@@ -234,7 +210,7 @@ const Upload = () => {
                         setUploadedVideo(null);
                         setCurrentVideoId(null);
                         setAnalysisComplete(false);
-                        setShowUploadForm(false);
+                        setViewMode('original');
                       }}
                     >
                       Back to Dashboard
