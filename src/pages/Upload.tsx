@@ -1,24 +1,67 @@
 import { useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Upload as UploadIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { VideoUpload } from '@/components/VideoUpload';
 import { VideoPlayer } from '@/components/VideoPlayer';
+import { UploadHistory } from '@/components/UploadHistory';
+import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
 
 const Upload = () => {
   const [uploadedVideo, setUploadedVideo] = useState<string | null>(null);
+  const [currentVideoId, setCurrentVideoId] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [showUploadForm, setShowUploadForm] = useState(false);
 
   const handleVideoUpload = async (videoUrl: string) => {
     setUploadedVideo(videoUrl);
     setIsAnalyzing(true);
+    setProgress(0);
     
     try {
-      // Simulate analysis progress
+      // Save video to database
+      const { data: videoData, error: uploadError } = await supabase
+        .from('videos')
+        .insert({
+          filename: `video_${Date.now()}.mp4`,
+          file_url: videoUrl,
+          file_size: 0, // In a real implementation, this would be the actual file size
+          analysis_status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (uploadError) throw uploadError;
+      setCurrentVideoId(videoData.id);
+
+      // Start AI analysis
+      await analyzeVideo(videoData.id, videoUrl);
+    } catch (error) {
+      console.error('Error uploading video:', error);
+      setIsAnalyzing(false);
+    }
+  };
+
+  const analyzeVideo = async (videoId: string, videoUrl: string) => {
+    try {
+      // Update status to analyzing
+      await supabase
+        .from('videos')
+        .update({ analysis_status: 'analyzing' })
+        .eq('id', videoId);
+
+      // Call AI analysis edge function
+      const { data, error } = await supabase.functions.invoke('analyze-video', {
+        body: { videoId, videoUrl }
+      });
+
+      if (error) throw error;
+
+      // Update progress
       const interval = setInterval(() => {
         setProgress(prev => {
           if (prev >= 100) {
@@ -27,13 +70,27 @@ const Upload = () => {
             setAnalysisComplete(true);
             return 100;
           }
-          return prev + 10;
+          return prev + 15;
         });
-      }, 500);
+      }, 800);
+
     } catch (error) {
-      console.error('Error uploading video:', error);
+      console.error('Error analyzing video:', error);
       setIsAnalyzing(false);
+      
+      // Update status to error
+      await supabase
+        .from('videos')
+        .update({ analysis_status: 'error' })
+        .eq('id', videoId);
     }
+  };
+
+  const handleVideoSelect = (videoUrl: string, videoId: string) => {
+    setUploadedVideo(videoUrl);
+    setCurrentVideoId(videoId);
+    setAnalysisComplete(true);
+    setShowUploadForm(false);
   };
 
   const mockDetections = {
@@ -70,9 +127,37 @@ const Upload = () => {
 
       <div className="max-w-6xl mx-auto p-6">
         {!uploadedVideo ? (
-          <div className="max-w-2xl mx-auto">
-            <h1 className="text-3xl font-bold text-center mb-8">Upload Your Fencing Video</h1>
-            <VideoUpload onUpload={handleVideoUpload} />
+          <div className="space-y-8">
+            <div className="text-center">
+              <h1 className="text-3xl font-bold mb-4">Fencing Video Analysis</h1>
+              <p className="text-muted-foreground mb-8">Upload new videos or view previous analyses</p>
+              
+              <div className="flex justify-center gap-4 mb-8">
+                <Button 
+                  variant={showUploadForm ? "default" : "outline"} 
+                  onClick={() => setShowUploadForm(true)}
+                >
+                  <UploadIcon className="mr-2 h-4 w-4" />
+                  Upload New Video
+                </Button>
+                <Button 
+                  variant={!showUploadForm ? "default" : "outline"} 
+                  onClick={() => setShowUploadForm(false)}
+                >
+                  View History
+                </Button>
+              </div>
+            </div>
+
+            {showUploadForm ? (
+              <div className="max-w-2xl mx-auto">
+                <VideoUpload onUpload={handleVideoUpload} />
+              </div>
+            ) : (
+              <div className="max-w-4xl mx-auto">
+                <UploadHistory onVideoSelect={handleVideoSelect} />
+              </div>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -142,10 +227,17 @@ const Upload = () => {
                     <Button className="w-full" variant="outline">
                       Download Report
                     </Button>
-                    <Button className="w-full" variant="outline" asChild>
-                      <Link to="/upload">
-                        Upload Another Video
-                      </Link>
+                    <Button 
+                      className="w-full" 
+                      variant="outline"
+                      onClick={() => {
+                        setUploadedVideo(null);
+                        setCurrentVideoId(null);
+                        setAnalysisComplete(false);
+                        setShowUploadForm(false);
+                      }}
+                    >
+                      Back to Dashboard
                     </Button>
                   </div>
                 </Card>
