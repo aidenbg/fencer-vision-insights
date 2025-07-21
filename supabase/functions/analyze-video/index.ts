@@ -33,54 +33,71 @@ serve(async (req) => {
       .update({ analysis_status: 'analyzing' })
       .eq('id', videoId);
 
-    // Simulate AI video analysis with realistic fencing data
-    // In a real implementation, this would call an actual AI model
-    const mockAnalysisData = {
-      objects: [
-        { name: 'Fencer 1', confidence: Math.floor(Math.random() * 10) + 90 },
-        { name: 'Fencer 2', confidence: Math.floor(Math.random() * 10) + 90 },
-        { name: 'Weapon (Foil/Épée/Sabre)', confidence: Math.floor(Math.random() * 5) + 95 },
-        { name: 'Target Area', confidence: Math.floor(Math.random() * 15) + 85 },
-        { name: 'Piste', confidence: Math.floor(Math.random() * 10) + 90 }
-      ],
-      actions: [
-        { name: 'Attack', count: Math.floor(Math.random() * 10) + 8 },
-        { name: 'Parry', count: Math.floor(Math.random() * 8) + 6 },
-        { name: 'Riposte', count: Math.floor(Math.random() * 6) + 4 },
-        { name: 'Lunge', count: Math.floor(Math.random() * 8) + 10 },
-        { name: 'Retreat', count: Math.floor(Math.random() * 12) + 15 },
-        { name: 'Advance', count: Math.floor(Math.random() * 15) + 20 }
-      ],
+    // Call your YOLOv5 model API
+    const modelApiUrl = Deno.env.get('YOLO_MODEL_API_URL');
+    
+    if (!modelApiUrl) {
+      throw new Error('YOLO_MODEL_API_URL not configured');
+    }
+
+    console.log(`Calling YOLOv5 model at ${modelApiUrl}`);
+    
+    // Call your Python YOLOv5 API
+    const modelResponse = await fetch(`${modelApiUrl}/detect`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        video_url: videoUrl,
+        confidence_threshold: 0.5,
+        iou_threshold: 0.4
+      })
+    });
+
+    if (!modelResponse.ok) {
+      throw new Error(`Model API returned ${modelResponse.status}: ${await modelResponse.text()}`);
+    }
+
+    const modelResults = await modelResponse.json();
+    console.log('Model results received:', modelResults);
+
+    // Process YOLOv5 results into our format
+    const analysisData = {
+      objects: modelResults.detections?.map((det: any) => ({
+        name: det.class_name,
+        confidence: Math.round(det.confidence * 100),
+        bbox: det.bbox, // [x1, y1, x2, y2]
+        frame_number: det.frame || 0
+      })) || [],
+      actions: [], // Will be filled by action recognition model later
       metrics: {
-        total_touches: Math.floor(Math.random() * 10) + 15,
-        successful_touches: Math.floor(Math.random() * 8) + 8,
-        accuracy: Math.floor(Math.random() * 20) + 70,
-        average_speed: parseFloat((Math.random() * 2 + 3).toFixed(2)),
-        average_reaction_time: parseFloat((Math.random() * 0.5 + 0.2).toFixed(3)),
-        dominant_hand: Math.random() > 0.5 ? 'right' : 'left'
+        total_detections: modelResults.total_detections || 0,
+        processing_time: modelResults.processing_time || '0s',
+        frames_processed: modelResults.frames_processed || 0,
+        model_version: 'yolov5-custom'
       }
     };
-
-    // Simulate processing time
-    await new Promise(resolve => setTimeout(resolve, 2000));
 
     // Save analytics to database
     const { error: analyticsError } = await supabase
       .from('video_analytics')
       .insert({
         video_id: videoId,
-        total_touches: mockAnalysisData.metrics.total_touches,
-        successful_touches: mockAnalysisData.metrics.successful_touches,
-        accuracy: mockAnalysisData.metrics.accuracy,
-        average_speed: mockAnalysisData.metrics.average_speed,
-        average_reaction_time: mockAnalysisData.metrics.average_reaction_time,
-        dominant_hand: mockAnalysisData.metrics.dominant_hand,
+        total_touches: 0, // Will be updated by action recognition
+        successful_touches: 0, // Will be updated by action recognition  
+        accuracy: 0, // Will be updated by action recognition
+        average_speed: 0, // Will be updated by action recognition
+        average_reaction_time: 0, // Will be updated by action recognition
+        dominant_hand: null, // Will be updated by pose estimation
         analysis_data: {
-          objects: mockAnalysisData.objects,
-          actions: mockAnalysisData.actions,
-          processing_time: '2.5s',
-          model_version: 'fencing-ai-v1.0',
-          confidence_threshold: 0.8
+          objects: analysisData.objects,
+          actions: analysisData.actions,
+          processing_time: analysisData.metrics.processing_time,
+          model_version: analysisData.metrics.model_version,
+          total_detections: analysisData.metrics.total_detections,
+          frames_processed: analysisData.metrics.frames_processed,
+          confidence_threshold: 0.5
         }
       });
 
@@ -106,7 +123,7 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         message: 'Video analysis completed',
-        data: mockAnalysisData 
+        data: analysisData
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
