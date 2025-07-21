@@ -1,4 +1,5 @@
-import { Swords, Upload, BarChart3, Target, Play } from 'lucide-react';
+import { Swords, Upload, BarChart3, Target } from 'lucide-react';
+import { Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
