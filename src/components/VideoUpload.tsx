@@ -12,7 +12,11 @@ interface UploadedFile {
   progress: number;
 }
 
-export function VideoUpload() {
+interface VideoUploadProps {
+  onUpload?: (videoUrl: string) => void;
+}
+
+export function VideoUpload({ onUpload }: VideoUploadProps = {}) {
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -72,6 +76,14 @@ export function VideoUpload() {
             ? { ...f, status: 'uploaded', progress: 100 }
             : f
         ));
+        
+        // Call onUpload callback when upload is complete
+        if (onUpload) {
+          const file = files.find(f => f.id === fileId);
+          if (file) {
+            onUpload(`/mock-video-${fileId}.mp4`);
+          }
+        }
       } else {
         setFiles(prev => prev.map(f => 
           f.id === fileId 
