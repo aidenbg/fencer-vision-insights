@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { ArrowLeft, Play, Pause, RotateCcw } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { VideoUpload } from '@/components/VideoUpload';
+import { VideoPlayer } from '@/components/VideoPlayer';
 import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 const Upload = () => {
   const [uploadedVideo, setUploadedVideo] = useState<string | null>(null);
@@ -12,31 +14,69 @@ const Upload = () => {
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const [progress, setProgress] = useState(0);
 
-  const handleVideoUpload = (videoUrl: string) => {
+  const handleVideoUpload = async (videoUrl: string) => {
     setUploadedVideo(videoUrl);
     setIsAnalyzing(true);
     
-    // Simulate analysis progress
-    const interval = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setIsAnalyzing(false);
-          setAnalysisComplete(true);
-          return 100;
-        }
-        return prev + 10;
-      });
-    }, 500);
+    try {
+      // Save video to database
+      const { data, error } = await supabase
+        .from('videos')
+        .insert([
+          {
+            filename: `video_${Date.now()}.mp4`,
+            file_url: videoUrl,
+            file_size: 0, // We'd calculate this in a real implementation
+            analysis_status: 'analyzing'
+          }
+        ])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error saving video:', error);
+      }
+
+      // Simulate analysis progress
+      const interval = setInterval(() => {
+        setProgress(prev => {
+          if (prev >= 100) {
+            clearInterval(interval);
+            setIsAnalyzing(false);
+            setAnalysisComplete(true);
+            
+            // Update video status in database
+            if (data) {
+              supabase
+                .from('videos')
+                .update({ analysis_status: 'completed' })
+                .eq('id', data.id);
+            }
+            
+            return 100;
+          }
+          return prev + 10;
+        });
+      }, 500);
+    } catch (error) {
+      console.error('Error uploading video:', error);
+      setIsAnalyzing(false);
+    }
   };
 
-  const mockStats = {
-    totalTouches: 12,
-    successfulTouches: 8,
-    averageReactionTime: '0.42s',
-    accuracy: '67%',
-    dominantHand: 'Right',
-    averageSpeed: '2.3 m/s'
+  const mockDetections = {
+    objects: [
+      { name: 'Fencer 1', confidence: 97 },
+      { name: 'Fencer 2', confidence: 95 },
+      { name: 'Foil', confidence: 99 },
+      { name: 'Target Area', confidence: 92 }
+    ],
+    actions: [
+      { name: 'Attack', count: 8 },
+      { name: 'Parry', count: 6 },
+      { name: 'Riposte', count: 4 },
+      { name: 'Lunge', count: 12 }
+    ]
   };
 
   return (
@@ -63,85 +103,61 @@ const Upload = () => {
             <VideoUpload onUpload={handleVideoUpload} />
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Video Section */}
-            <div className="lg:col-span-2">
-              <Card className="p-6">
-                <h2 className="text-2xl font-bold mb-4">Video Analysis</h2>
-                
-                {/* Video Player Placeholder */}
-                <div className="aspect-video bg-muted rounded-lg flex items-center justify-center mb-4">
-                  <div className="text-center">
-                    <Play className="h-16 w-16 mx-auto mb-2 text-muted-foreground" />
-                    <p className="text-muted-foreground">Video Player</p>
-                  </div>
-                </div>
-
-                {/* Video Controls */}
-                <div className="flex items-center gap-4">
-                  <Button variant="outline" size="sm">
-                    <Play className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <Pause className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <RotateCcw className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                {/* Analysis Progress */}
-                {isAnalyzing && (
-                  <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-                    <p className="text-sm font-medium mb-2">Analyzing video...</p>
-                    <Progress value={progress} className="mb-2" />
-                    <p className="text-xs text-muted-foreground">{progress}% complete</p>
-                  </div>
-                )}
-              </Card>
+            <div>
+              <h2 className="text-2xl font-bold mb-4">Uploaded Video</h2>
+              <VideoPlayer videoUrl={uploadedVideo} />
+              
+              {/* Analysis Progress */}
+              {isAnalyzing && (
+                <Card className="mt-4 p-4">
+                  <p className="text-sm font-medium mb-2">Analyzing video...</p>
+                  <Progress value={progress} className="mb-2" />
+                  <p className="text-xs text-muted-foreground">{progress}% complete</p>
+                </Card>
+              )}
             </div>
 
-            {/* Stats Section */}
+            {/* Analysis Results Section */}
             <div className="space-y-6">
               <Card className="p-6">
-                <h3 className="text-xl font-bold mb-4">Analysis Results</h3>
+                <h3 className="text-xl font-bold mb-4">Object Detection</h3>
                 
                 {analysisComplete ? (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="text-center p-3 bg-muted/50 rounded-lg">
-                        <p className="text-2xl font-bold text-primary">{mockStats.totalTouches}</p>
-                        <p className="text-xs text-muted-foreground">Total Touches</p>
+                  <div className="space-y-3">
+                    {mockDetections.objects.map((obj, index) => (
+                      <div key={index} className="flex justify-between p-3 bg-muted/30 rounded-lg">
+                        <span className="text-sm font-medium">{obj.name}</span>
+                        <span className="text-sm text-primary">{obj.confidence}% confidence</span>
                       </div>
-                      <div className="text-center p-3 bg-muted/50 rounded-lg">
-                        <p className="text-2xl font-bold text-green-500">{mockStats.successfulTouches}</p>
-                        <p className="text-xs text-muted-foreground">Successful</p>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-sm">Accuracy</span>
-                        <span className="text-sm font-medium">{mockStats.accuracy}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm">Avg Reaction Time</span>
-                        <span className="text-sm font-medium">{mockStats.averageReactionTime}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm">Avg Speed</span>
-                        <span className="text-sm font-medium">{mockStats.averageSpeed}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm">Dominant Hand</span>
-                        <span className="text-sm font-medium">{mockStats.dominantHand}</span>
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 ) : (
                   <div className="text-center py-8">
                     <p className="text-muted-foreground">
-                      {isAnalyzing ? 'Analysis in progress...' : 'Upload a video to see results'}
+                      {isAnalyzing ? 'Detecting objects...' : 'Upload a video to see results'}
+                    </p>
+                  </div>
+                )}
+              </Card>
+
+              <Card className="p-6">
+                <h3 className="text-xl font-bold mb-4">Action Recognition</h3>
+                
+                {analysisComplete ? (
+                  <div className="space-y-3">
+                    {mockDetections.actions.map((action, index) => (
+                      <div key={index} className="flex justify-between p-3 bg-muted/30 rounded-lg">
+                        <span className="text-sm font-medium">{action.name}</span>
+                        <span className="text-sm text-primary">{action.count} instances</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">
+                      {isAnalyzing ? 'Recognizing actions...' : 'Upload a video to see results'}
                     </p>
                   </div>
                 )}
@@ -153,9 +169,6 @@ const Upload = () => {
                   <div className="space-y-2">
                     <Button className="w-full" variant="outline">
                       Download Report
-                    </Button>
-                    <Button className="w-full" variant="outline">
-                      Share Results
                     </Button>
                     <Button className="w-full" variant="outline" asChild>
                       <Link to="/upload">

@@ -40,37 +40,8 @@ const About = () => {
         {/* What We Do */}
         <Card className="p-8 mb-12">
           <p className="text-lg text-muted-foreground leading-relaxed text-center">
-            Fencelytics uses AI to analyze your fencing videos and provide instant performance insights. 
-            Upload any fencing bout, get detailed statistics on touches, timing, and technique.
+            Fencelytics uses cutting-edge AI models to analyze your fencing videos. Our object detection model identifies fencers, target areas, and foils, while our action recognition model detects specific fencing actions like attacks, parries, and ripostes. Simply upload your fencing bout video and get instant insights into your technique and performance.
           </p>
-        </Card>
-
-        {/* How It Works */}
-        <Card className="p-8 mb-12">
-          <h2 className="text-2xl font-bold mb-6 text-center">How It Works</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-            <div>
-              <div className="w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center text-lg font-bold mx-auto mb-3">
-                1
-              </div>
-              <h3 className="font-semibold mb-2">Upload Video</h3>
-              <p className="text-sm text-muted-foreground">Upload your fencing bout video</p>
-            </div>
-            <div>
-              <div className="w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center text-lg font-bold mx-auto mb-3">
-                2
-              </div>
-              <h3 className="font-semibold mb-2">AI Analysis</h3>
-              <p className="text-sm text-muted-foreground">Our AI analyzes every frame</p>
-            </div>
-            <div>
-              <div className="w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center text-lg font-bold mx-auto mb-3">
-                3
-              </div>
-              <h3 className="font-semibold mb-2">Get Results</h3>
-              <p className="text-sm text-muted-foreground">Receive detailed insights</p>
-            </div>
-          </div>
         </Card>
 
         {/* CTA */}

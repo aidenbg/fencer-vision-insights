@@ -59,12 +59,14 @@ export function VideoUpload({ onUpload }: VideoUploadProps = {}) {
     setFiles(prev => [...prev, ...newFiles]);
 
     // Simulate upload progress
-    newFiles.forEach(file => {
-      simulateUpload(file.id);
+    newFiles.forEach((file, index) => {
+      const actualFile = fileList[index];
+      const videoUrl = URL.createObjectURL(actualFile);
+      simulateUpload(file.id, videoUrl);
     });
   };
 
-  const simulateUpload = (fileId: string) => {
+  const simulateUpload = (fileId: string, videoUrl: string) => {
     let progress = 0;
     const interval = setInterval(() => {
       progress += Math.random() * 30;
@@ -77,10 +79,10 @@ export function VideoUpload({ onUpload }: VideoUploadProps = {}) {
             : f
         ));
         
-        // Call onUpload callback when upload is complete
+        // Call onUpload callback when upload is complete with actual video URL
         setTimeout(() => {
           if (onUpload) {
-            onUpload(`/mock-video-${fileId}.mp4`);
+            onUpload(videoUrl);
           }
         }, 100);
       } else {

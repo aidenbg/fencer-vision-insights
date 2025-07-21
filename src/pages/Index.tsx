@@ -29,7 +29,7 @@ const Index = () => {
           </h1>
           
           <p className="text-xl text-muted-foreground mb-12">
-            Upload your fencing videos and get instant AI-powered analysis
+            AI-powered fencing analysis using object detection and action recognition models
           </p>
           
           <Button 
@@ -66,29 +66,51 @@ const Index = () => {
 
                 {/* Demo Results */}
                 <div className="space-y-4">
-                  <h3 className="text-xl font-semibold">Instant Analysis Results</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-3 bg-muted/50 rounded-lg">
-                      <p className="text-2xl font-bold text-primary">15</p>
-                      <p className="text-xs text-muted-foreground">Total Touches</p>
-                    </div>
-                    <div className="text-center p-3 bg-muted/50 rounded-lg">
-                      <p className="text-2xl font-bold text-green-500">12</p>
-                      <p className="text-xs text-muted-foreground">Successful</p>
+                  <h3 className="text-xl font-semibold">AI Detection Results</h3>
+                  
+                  {/* Object Detection */}
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium text-primary">Objects Detected:</h4>
+                    <div className="grid grid-cols-1 gap-2">
+                      <div className="flex justify-between p-2 bg-muted/30 rounded">
+                        <span className="text-sm">Fencer 1</span>
+                        <span className="text-sm text-primary">97% confidence</span>
+                      </div>
+                      <div className="flex justify-between p-2 bg-muted/30 rounded">
+                        <span className="text-sm">Fencer 2</span>
+                        <span className="text-sm text-primary">95% confidence</span>
+                      </div>
+                      <div className="flex justify-between p-2 bg-muted/30 rounded">
+                        <span className="text-sm">Foil</span>
+                        <span className="text-sm text-primary">99% confidence</span>
+                      </div>
+                      <div className="flex justify-between p-2 bg-muted/30 rounded">
+                        <span className="text-sm">Target Area</span>
+                        <span className="text-sm text-primary">92% confidence</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-sm">Accuracy</span>
-                      <span className="text-sm font-medium">80%</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm">Avg Reaction Time</span>
-                      <span className="text-sm font-medium">0.38s</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm">Avg Speed</span>
-                      <span className="text-sm font-medium">2.1 m/s</span>
+
+                  {/* Action Recognition */}
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium text-primary">Actions Detected:</h4>
+                    <div className="grid grid-cols-1 gap-2">
+                      <div className="flex justify-between p-2 bg-muted/30 rounded">
+                        <span className="text-sm">Attack</span>
+                        <span className="text-sm text-primary">8 instances</span>
+                      </div>
+                      <div className="flex justify-between p-2 bg-muted/30 rounded">
+                        <span className="text-sm">Parry</span>
+                        <span className="text-sm text-primary">6 instances</span>
+                      </div>
+                      <div className="flex justify-between p-2 bg-muted/30 rounded">
+                        <span className="text-sm">Riposte</span>
+                        <span className="text-sm text-primary">4 instances</span>
+                      </div>
+                      <div className="flex justify-between p-2 bg-muted/30 rounded">
+                        <span className="text-sm">Lunge</span>
+                        <span className="text-sm text-primary">12 instances</span>
+                      </div>
                     </div>
                   </div>
                 </div>
