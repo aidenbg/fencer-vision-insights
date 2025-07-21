@@ -6,7 +6,6 @@ import { Progress } from '@/components/ui/progress';
 import { VideoUpload } from '@/components/VideoUpload';
 import { VideoPlayer } from '@/components/VideoPlayer';
 import { Link } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 
 const Upload = () => {
   const [uploadedVideo, setUploadedVideo] = useState<string | null>(null);
@@ -19,24 +18,6 @@ const Upload = () => {
     setIsAnalyzing(true);
     
     try {
-      // Save video to database
-      const { data, error } = await supabase
-        .from('videos')
-        .insert([
-          {
-            filename: `video_${Date.now()}.mp4`,
-            file_url: videoUrl,
-            file_size: 0, // We'd calculate this in a real implementation
-            analysis_status: 'analyzing'
-          }
-        ])
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error saving video:', error);
-      }
-
       // Simulate analysis progress
       const interval = setInterval(() => {
         setProgress(prev => {
@@ -44,15 +25,6 @@ const Upload = () => {
             clearInterval(interval);
             setIsAnalyzing(false);
             setAnalysisComplete(true);
-            
-            // Update video status in database
-            if (data) {
-              supabase
-                .from('videos')
-                .update({ analysis_status: 'completed' })
-                .eq('id', data.id);
-            }
-            
             return 100;
           }
           return prev + 10;
