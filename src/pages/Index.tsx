@@ -1,4 +1,4 @@
-import { Swords, Upload, BarChart3, Target } from 'lucide-react';
+import { Swords, Upload, BarChart3, Target, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
@@ -24,7 +24,7 @@ const Index = () => {
           </div>
           
           <h1 className="text-6xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            FenceAnalytics
+            Fencelytics
           </h1>
           
           <p className="text-xl text-muted-foreground mb-12">
@@ -45,38 +45,54 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Features Section */}
+      {/* Demo Section */}
       <section className="py-20 bg-muted/30">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            {[
-              {
-                icon: Target,
-                title: 'Touch Detection',
-                description: 'Automatically identify successful touches'
-              },
-              {
-                icon: BarChart3,
-                title: 'Performance Metrics',
-                description: 'Track reaction times and accuracy'
-              },
-              {
-                icon: Swords,
-                title: 'Technique Analysis',
-                description: 'Analyze form and movement patterns'
-              }
-            ].map((feature, index) => {
-              const IconComponent = feature.icon;
-              return (
-                <div key={index} className="text-center">
-                  <div className="mx-auto w-12 h-12 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-full flex items-center justify-center mb-4">
-                    <IconComponent className="h-6 w-6 text-primary" />
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-3xl font-bold text-center mb-12">See It In Action</h2>
+            <Card className="p-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Demo Video */}
+                <div>
+                  <div className="aspect-video bg-muted rounded-lg flex items-center justify-center mb-4">
+                    <div className="text-center">
+                      <Play className="h-16 w-16 mx-auto mb-2 text-muted-foreground" />
+                      <p className="text-muted-foreground">Demo Video</p>
+                      <p className="text-xs text-muted-foreground mt-1">Fencing bout analysis</p>
+                    </div>
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
-                  <p className="text-sm text-muted-foreground">{feature.description}</p>
                 </div>
-              );
-            })}
+
+                {/* Demo Results */}
+                <div className="space-y-4">
+                  <h3 className="text-xl font-semibold">Instant Analysis Results</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center p-3 bg-muted/50 rounded-lg">
+                      <p className="text-2xl font-bold text-primary">15</p>
+                      <p className="text-xs text-muted-foreground">Total Touches</p>
+                    </div>
+                    <div className="text-center p-3 bg-muted/50 rounded-lg">
+                      <p className="text-2xl font-bold text-green-500">12</p>
+                      <p className="text-xs text-muted-foreground">Successful</p>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-sm">Accuracy</span>
+                      <span className="text-sm font-medium">80%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm">Avg Reaction Time</span>
+                      <span className="text-sm font-medium">0.38s</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm">Avg Speed</span>
+                      <span className="text-sm font-medium">2.1 m/s</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Card>
           </div>
         </div>
       </section>

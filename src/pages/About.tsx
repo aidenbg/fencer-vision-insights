@@ -31,96 +31,44 @@ const About = () => {
               <Swords className="h-12 w-12 text-white" />
             </div>
           </div>
-          <h1 className="text-4xl font-bold mb-4">About FenceAnalytics</h1>
+          <h1 className="text-4xl font-bold mb-4">About Fencelytics</h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Advanced AI-powered video analysis for fencing athletes, coaches, and enthusiasts.
           </p>
         </div>
 
-        {/* Mission */}
+        {/* What We Do */}
         <Card className="p-8 mb-12">
-          <h2 className="text-2xl font-bold mb-4">Our Mission</h2>
-          <p className="text-lg text-muted-foreground leading-relaxed">
-            FenceAnalytics democratizes access to professional-level fencing analysis. Using cutting-edge 
-            computer vision and machine learning, we provide instant, detailed insights that help fencers 
-            at every level improve their technique, timing, and tactical awareness.
+          <p className="text-lg text-muted-foreground leading-relaxed text-center">
+            Fencelytics uses AI to analyze your fencing videos and provide instant performance insights. 
+            Upload any fencing bout, get detailed statistics on touches, timing, and technique.
           </p>
         </Card>
 
-        {/* Features */}
-        <div className="mb-12">
-          <h2 className="text-2xl font-bold text-center mb-8">What We Analyze</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[
-              {
-                icon: Target,
-                title: 'Touch Detection',
-                description: 'Automatically identify and classify successful touches, near-misses, and invalid attempts with frame-perfect accuracy.'
-              },
-              {
-                icon: BarChart3,
-                title: 'Performance Metrics',
-                description: 'Track reaction times, movement speed, accuracy rates, and improvement trends over multiple sessions.'
-              },
-              {
-                icon: Zap,
-                title: 'Timing Analysis',
-                description: 'Measure attack preparation time, parry-riposte sequences, and identify optimal timing windows.'
-              },
-              {
-                icon: Swords,
-                title: 'Technique Breakdown',
-                description: 'Analyze stance, blade work, footwork patterns, and movement efficiency across different weapons.'
-              }
-            ].map((feature, index) => {
-              const IconComponent = feature.icon;
-              return (
-                <Card key={index} className="p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                      <IconComponent className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
-                      <p className="text-muted-foreground">{feature.description}</p>
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
-
         {/* How It Works */}
         <Card className="p-8 mb-12">
-          <h2 className="text-2xl font-bold mb-6">How It Works</h2>
-          <div className="space-y-4">
-            <div className="flex items-start gap-4">
-              <div className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center text-sm font-bold">
+          <h2 className="text-2xl font-bold mb-6 text-center">How It Works</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+            <div>
+              <div className="w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center text-lg font-bold mx-auto mb-3">
                 1
               </div>
-              <div>
-                <h3 className="font-semibold mb-1">Upload Your Video</h3>
-                <p className="text-muted-foreground">Simply upload any fencing bout or training video in common formats.</p>
-              </div>
+              <h3 className="font-semibold mb-2">Upload Video</h3>
+              <p className="text-sm text-muted-foreground">Upload your fencing bout video</p>
             </div>
-            <div className="flex items-start gap-4">
-              <div className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center text-sm font-bold">
+            <div>
+              <div className="w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center text-lg font-bold mx-auto mb-3">
                 2
               </div>
-              <div>
-                <h3 className="font-semibold mb-1">AI Analysis</h3>
-                <p className="text-muted-foreground">Our advanced computer vision models analyze every frame for actions, touches, and technique.</p>
-              </div>
+              <h3 className="font-semibold mb-2">AI Analysis</h3>
+              <p className="text-sm text-muted-foreground">Our AI analyzes every frame</p>
             </div>
-            <div className="flex items-start gap-4">
-              <div className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center text-sm font-bold">
+            <div>
+              <div className="w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center text-lg font-bold mx-auto mb-3">
                 3
               </div>
-              <div>
-                <h3 className="font-semibold mb-1">Get Insights</h3>
-                <p className="text-muted-foreground">Receive detailed statistics, timing data, and actionable feedback to improve your fencing.</p>
-              </div>
+              <h3 className="font-semibold mb-2">Get Results</h3>
+              <p className="text-sm text-muted-foreground">Receive detailed insights</p>
             </div>
           </div>
         </Card>

@@ -78,12 +78,11 @@ export function VideoUpload({ onUpload }: VideoUploadProps = {}) {
         ));
         
         // Call onUpload callback when upload is complete
-        if (onUpload) {
-          const file = files.find(f => f.id === fileId);
-          if (file) {
+        setTimeout(() => {
+          if (onUpload) {
             onUpload(`/mock-video-${fileId}.mp4`);
           }
-        }
+        }, 100);
       } else {
         setFiles(prev => prev.map(f => 
           f.id === fileId 
