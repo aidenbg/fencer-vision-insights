@@ -74,49 +74,7 @@ serve(async (req) => {
     const modelResults = await modelResponse.json();
     console.log('Model results received:', modelResults);
 
-    // Process YOLOv5 results into our format
-    const analysisData = {
-      objects: modelResults.detections?.map((det: any) => ({
-        name: det.class_name,
-        confidence: Math.round(det.confidence * 100),
-        bbox: det.bbox, // [x1, y1, x2, y2]
-        frame_number: det.frame || 0
-      })) || [],
-      actions: [], // Will be filled by action recognition model later
-      metrics: {
-        total_detections: modelResults.total_detections || 0,
-        processing_time: modelResults.processing_time || '0s',
-        frames_processed: modelResults.frames_processed || 0,
-        model_version: 'yolov5-custom'
-      }
-    };
-
-    // Save analytics to database
-    const { error: analyticsError } = await supabase
-      .from('video_analytics')
-      .insert({
-        video_id: videoId,
-        total_touches: 0, // Will be updated by action recognition
-        successful_touches: 0, // Will be updated by action recognition  
-        accuracy: 0, // Will be updated by action recognition
-        average_speed: 0, // Will be updated by action recognition
-        average_reaction_time: 0, // Will be updated by action recognition
-        dominant_hand: null, // Will be updated by pose estimation
-        analysis_data: {
-          objects: analysisData.objects,
-          actions: analysisData.actions,
-          processing_time: analysisData.metrics.processing_time,
-          model_version: analysisData.metrics.model_version,
-          total_detections: analysisData.metrics.total_detections,
-          frames_processed: analysisData.metrics.frames_processed,
-          confidence_threshold: 0.5
-        }
-      });
-
-    if (analyticsError) {
-      console.error('Error saving analytics:', analyticsError);
-      throw analyticsError;
-    }
+    // Just process the basic detection results - no complex analytics needed
 
     // Update video status to completed and save the output_video_id as bboxes_video_url
     const { error: updateError } = await supabase
@@ -141,8 +99,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'Video analysis completed',
-        data: analysisData
+        message: 'Video analysis completed'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

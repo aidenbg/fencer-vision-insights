@@ -7,8 +7,8 @@ interface VideoPlayerProps {
   videoUrl: string;
   bboxesVideoUrl?: string | null;
   className?: string;
-  viewMode?: 'original' | 'detections' | 'detections-poses';
-  onViewModeChange?: (mode: 'original' | 'detections' | 'detections-poses') => void;
+  viewMode?: 'original' | 'detections';
+  onViewModeChange?: (mode: 'original' | 'detections') => void;
 }
 
 export const VideoPlayer = ({ videoUrl, bboxesVideoUrl, className = "", viewMode = 'original', onViewModeChange }: VideoPlayerProps) => {
@@ -96,13 +96,6 @@ export const VideoPlayer = ({ videoUrl, bboxesVideoUrl, className = "", viewMode
               onClick={() => onViewModeChange('detections')}
             >
               + Detections
-            </Button>
-            <Button 
-              variant={viewMode === 'detections-poses' ? 'default' : 'outline'} 
-              size="sm"
-              onClick={() => onViewModeChange('detections-poses')}
-            >
-              + Poses
             </Button>
           </div>
         </div>

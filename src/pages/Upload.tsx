@@ -16,7 +16,7 @@ const Upload = () => {
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
-  const [viewMode, setViewMode] = useState<'original' | 'detections' | 'detections-poses'>('original');
+  const [viewMode, setViewMode] = useState<'original' | 'detections'>('original');
   const [bboxesVideoUrl, setBboxesVideoUrl] = useState<string | null>(null);
 
   const handleVideoUpload = async (videoUrl: string) => {
@@ -188,57 +188,15 @@ const Upload = () => {
               )}
             </div>
 
-            {/* Analysis Results Section */}
+            {/* Simple Actions */}
             <div className="space-y-6">
-              <Card className="p-6">
-                <h3 className="text-xl font-bold mb-4">Object Detection</h3>
-                
-                {analysisComplete ? (
-                  <div className="space-y-3">
-                    {mockDetections.objects.map((obj, index) => (
-                      <div key={index} className="flex justify-between p-3 bg-muted/30 rounded-lg">
-                        <span className="text-sm font-medium">{obj.name}</span>
-                        <span className="text-sm text-primary">{obj.confidence}% confidence</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">
-                      {isAnalyzing ? 'Detecting objects...' : 'Upload a video to see results'}
-                    </p>
-                  </div>
-                )}
-              </Card>
-
-              <Card className="p-6">
-                <h3 className="text-xl font-bold mb-4">Action Recognition</h3>
-                
-                {analysisComplete ? (
-                  <div className="space-y-3">
-                    {mockDetections.actions.map((action, index) => (
-                      <div key={index} className="flex justify-between p-3 bg-muted/30 rounded-lg">
-                        <span className="text-sm font-medium">{action.name}</span>
-                        <span className="text-sm text-primary">{action.count} instances</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">
-                      {isAnalyzing ? 'Recognizing actions...' : 'Upload a video to see results'}
-                    </p>
-                  </div>
-                )}
-              </Card>
-
               {analysisComplete && (
                 <Card className="p-6">
-                  <h3 className="text-lg font-semibold mb-4">Actions</h3>
+                  <h3 className="text-lg font-semibold mb-4">Analysis Complete</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Use the buttons above the video to switch between original and detection views.
+                  </p>
                   <div className="space-y-2">
-                    <Button className="w-full" variant="outline">
-                      Download Report
-                    </Button>
                     <Button 
                       className="w-full" 
                       variant="outline"
@@ -250,7 +208,7 @@ const Upload = () => {
                         setBboxesVideoUrl(null);
                       }}
                     >
-                      Back to Dashboard
+                      Upload Another Video
                     </Button>
                   </div>
                 </Card>
