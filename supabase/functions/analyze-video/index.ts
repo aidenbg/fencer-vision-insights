@@ -47,9 +47,9 @@ serve(async (req) => {
       throw new Error('Blob URLs cannot be accessed by the server. Please use base64 data URLs.');
     }
     
-    // Call your Python YOLOv5 API - make sure we're calling the correct endpoint
+    // Call your Python YOLOv5 API - use the correct /analyze endpoint
     // Check if modelApiUrl ends with a slash and adjust accordingly
-    const apiUrl = modelApiUrl.endsWith('/') ? `${modelApiUrl}detect` : `${modelApiUrl}/detect`;
+    const apiUrl = modelApiUrl.endsWith('/') ? `${modelApiUrl}analyze` : `${modelApiUrl}/analyze`;
     console.log(`Making request to: ${apiUrl}`);
     
     // If videoUrl is a base64 data URL, we can pass it directly to the Flask app
@@ -125,8 +125,8 @@ serve(async (req) => {
         analysis_status: 'completed',
         bboxes_video_url: modelResults.output_video_id ? 
           (modelApiUrl.endsWith('/') 
-            ? `${modelApiUrl}videos/${modelResults.output_video_id}` 
-            : `${modelApiUrl}/videos/${modelResults.output_video_id}`) 
+            ? `${modelApiUrl}download/${modelResults.output_video_id}` 
+            : `${modelApiUrl}/download/${modelResults.output_video_id}`) 
           : null
       })
       .eq('id', videoId);
