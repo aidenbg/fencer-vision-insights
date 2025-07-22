@@ -5,12 +5,13 @@ import { Slider } from '@/components/ui/slider';
 
 interface VideoPlayerProps {
   videoUrl: string;
+  bboxesVideoUrl?: string | null;
   className?: string;
   viewMode?: 'original' | 'detections' | 'detections-poses';
   onViewModeChange?: (mode: 'original' | 'detections' | 'detections-poses') => void;
 }
 
-export const VideoPlayer = ({ videoUrl, className = "", viewMode = 'original', onViewModeChange }: VideoPlayerProps) => {
+export const VideoPlayer = ({ videoUrl, bboxesVideoUrl, className = "", viewMode = 'original', onViewModeChange }: VideoPlayerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -109,7 +110,7 @@ export const VideoPlayer = ({ videoUrl, className = "", viewMode = 'original', o
       
       <video
         ref={videoRef}
-        src={videoUrl}
+        src={viewMode === 'original' || !bboxesVideoUrl ? videoUrl : bboxesVideoUrl}
         className="w-full aspect-video bg-muted"
         onEnded={() => setIsPlaying(false)}
       />

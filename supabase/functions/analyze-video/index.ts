@@ -106,10 +106,13 @@ serve(async (req) => {
       throw analyticsError;
     }
 
-    // Update video status to completed
+    // Update video status to completed and save the output_video_id as bboxes_video_url
     const { error: updateError } = await supabase
       .from('videos')
-      .update({ analysis_status: 'completed' })
+      .update({ 
+        analysis_status: 'completed',
+        bboxes_video_url: modelResults.output_video_id ? `${modelApiUrl}/videos/${modelResults.output_video_id}` : null
+      })
       .eq('id', videoId);
 
     if (updateError) {

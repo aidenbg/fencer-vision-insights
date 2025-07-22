@@ -16,6 +16,7 @@ const Upload = () => {
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const [progress, setProgress] = useState(0);
   const [viewMode, setViewMode] = useState<'original' | 'detections' | 'detections-poses'>('original');
+  const [bboxesVideoUrl, setBboxesVideoUrl] = useState<string | null>(null);
 
   const handleVideoUpload = async (videoUrl: string) => {
     setUploadedVideo(videoUrl);
@@ -68,6 +69,19 @@ const Upload = () => {
             clearInterval(interval);
             setIsAnalyzing(false);
             setAnalysisComplete(true);
+            
+            // Fetch the video with bboxes once analysis is complete
+            supabase
+              .from('videos')
+              .select('bboxes_video_url')
+              .eq('id', videoId)
+              .single()
+              .then(({ data, error }) => {
+                if (!error && data?.bboxes_video_url) {
+                  setBboxesVideoUrl(data.bboxes_video_url);
+                }
+              });
+            
             return 100;
           }
           return prev + 15;
@@ -137,7 +151,8 @@ const Upload = () => {
             <div>
               <h2 className="text-2xl font-bold mb-4">Video Analysis</h2>
               <VideoPlayer 
-                videoUrl={uploadedVideo} 
+                videoUrl={uploadedVideo}
+                bboxesVideoUrl={bboxesVideoUrl}
                 viewMode={viewMode}
                 onViewModeChange={setViewMode}
               />
@@ -211,6 +226,7 @@ const Upload = () => {
                         setCurrentVideoId(null);
                         setAnalysisComplete(false);
                         setViewMode('original');
+                        setBboxesVideoUrl(null);
                       }}
                     >
                       Back to Dashboard

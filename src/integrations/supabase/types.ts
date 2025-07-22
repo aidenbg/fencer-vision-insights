@@ -67,6 +67,7 @@ export type Database = {
       videos: {
         Row: {
           analysis_status: string
+          bboxes_video_url: string | null
           created_at: string
           file_size: number | null
           file_url: string
@@ -77,6 +78,7 @@ export type Database = {
         }
         Insert: {
           analysis_status?: string
+          bboxes_video_url?: string | null
           created_at?: string
           file_size?: number | null
           file_url: string
@@ -87,6 +89,7 @@ export type Database = {
         }
         Update: {
           analysis_status?: string
+          bboxes_video_url?: string | null
           created_at?: string
           file_size?: number | null
           file_url?: string
