@@ -42,8 +42,12 @@ serve(async (req) => {
 
     console.log(`Calling YOLOv5 model at ${modelApiUrl}`);
     
-    // Call your Python YOLOv5 API
-    const modelResponse = await fetch(`${modelApiUrl}/detect`, {
+    // Call your Python YOLOv5 API - make sure we're calling the correct endpoint
+    // Check if modelApiUrl ends with a slash and adjust accordingly
+    const apiUrl = modelApiUrl.endsWith('/') ? `${modelApiUrl}detect` : `${modelApiUrl}/detect`;
+    console.log(`Making request to: ${apiUrl}`);
+    
+    const modelResponse = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -111,7 +115,11 @@ serve(async (req) => {
       .from('videos')
       .update({ 
         analysis_status: 'completed',
-        bboxes_video_url: modelResults.output_video_id ? `${modelApiUrl}/videos/${modelResults.output_video_id}` : null
+        bboxes_video_url: modelResults.output_video_id ? 
+          (modelApiUrl.endsWith('/') 
+            ? `${modelApiUrl}videos/${modelResults.output_video_id}` 
+            : `${modelApiUrl}/videos/${modelResults.output_video_id}`) 
+          : null
       })
       .eq('id', videoId);
 
@@ -133,6 +141,22 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in analyze-video function:', error);
+    
+    // Make sure to update video status to error if we have videoId
+    try {
+      if (typeof videoId === 'string') {
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+        const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        
+        await supabase
+          .from('videos')
+          .update({ analysis_status: 'error' })
+          .eq('id', videoId);
+      }
+    } catch (updateError) {
+      console.error('Error updating video status to error:', updateError);
+    }
     
     return new Response(
       JSON.stringify({ 
