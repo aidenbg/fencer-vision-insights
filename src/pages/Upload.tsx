@@ -24,14 +24,27 @@ const Upload = () => {
     setProgress(0);
     
     try {
-      const videoId = `video_${Date.now()}`;
-      setCurrentVideoId(videoId);
+      // Create video record in database
+      const { data: videoRecord, error: insertError } = await supabase
+        .from('videos')
+        .insert({
+          filename: `video_${Date.now()}.mp4`,
+          original_video_url: videoUrl,
+          analysis_status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+      
+      setCurrentVideoId(videoRecord.id);
       
       // Start AI analysis
-      await analyzeVideo(videoId, videoUrl);
+      await analyzeVideo(videoRecord.id, videoUrl);
     } catch (error) {
       console.error('Error uploading video:', error);
       setIsAnalyzing(false);
+      setAnalysisError(error.message || 'Failed to upload video');
     }
   };
 
@@ -44,12 +57,12 @@ const Upload = () => {
 
       if (error) throw error;
       
-      // Set the bboxes video URL from the response
-      if (data?.bboxesVideoUrl) {
-        setBboxesVideoUrl(data.bboxesVideoUrl);
+      // Set the detection video URL from the response
+      if (data?.detectionVideoUrl) {
+        setBboxesVideoUrl(data.detectionVideoUrl);
       }
 
-      // Update progress
+      // Update progress simulation
       const interval = setInterval(() => {
         setProgress(prev => {
           if (prev >= 100) {

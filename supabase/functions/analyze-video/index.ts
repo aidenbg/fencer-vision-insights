@@ -76,16 +76,18 @@ serve(async (req) => {
 
     // Just process the basic detection results - no complex analytics needed
 
-    // Update video status to completed and save the output_video_id as bboxes_video_url
+    // Update video status to completed and save the output_video_id as detection_video_url
+    const detectionVideoUrl = modelResults.output_video_id ? 
+      (modelApiUrl.endsWith('/') 
+        ? `${modelApiUrl}download/${modelResults.output_video_id}` 
+        : `${modelApiUrl}/download/${modelResults.output_video_id}`) 
+      : null;
+
     const { error: updateError } = await supabase
       .from('videos')
       .update({ 
         analysis_status: 'completed',
-        bboxes_video_url: modelResults.output_video_id ? 
-          (modelApiUrl.endsWith('/') 
-            ? `${modelApiUrl}download/${modelResults.output_video_id}` 
-            : `${modelApiUrl}/download/${modelResults.output_video_id}`) 
-          : null
+        detection_video_url: detectionVideoUrl
       })
       .eq('id', videoId);
 
@@ -99,7 +101,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'Video analysis completed'
+        message: 'Video analysis completed',
+        detectionVideoUrl: detectionVideoUrl
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
