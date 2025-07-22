@@ -27,7 +27,7 @@ const About = () => {
         {/* Hero Section */}
         <div className="text-center mb-16">
           <div className="flex justify-center mb-6">
-            <div className="p-4 bg-gradient-to-r from-primary to-secondary rounded-full">
+            <div className="p-4 bg-gradient-primary rounded-full">
               <Swords className="h-12 w-12 text-white" />
             </div>
           </div>

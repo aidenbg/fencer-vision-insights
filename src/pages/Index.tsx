@@ -19,12 +19,12 @@ const Index = () => {
       <section className="flex items-center justify-center min-h-screen px-4">
         <div className="text-center max-w-2xl mx-auto">
           <div className="flex justify-center mb-8">
-            <div className="p-4 bg-gradient-to-r from-primary to-secondary rounded-full">
+            <div className="p-4 bg-gradient-primary rounded-full">
               <Swords className="h-16 w-16 text-white" />
             </div>
           </div>
           
-          <h1 className="text-6xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+          <h1 className="text-6xl md:text-7xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent">
             Fencelytics
           </h1>
           
