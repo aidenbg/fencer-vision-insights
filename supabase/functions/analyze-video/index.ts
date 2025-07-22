@@ -13,8 +13,12 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let videoId: string | undefined;
+
   try {
-    const { videoId, videoUrl } = await req.json();
+    const requestData = await req.json();
+    videoId = requestData.videoId;
+    const videoUrl = requestData.videoUrl;
     
     if (!videoId || !videoUrl) {
       throw new Error('Missing videoId or videoUrl');
@@ -48,20 +52,16 @@ serve(async (req) => {
     }
     
     // Call your Python YOLOv5 API - use the correct /analyze endpoint
-    // Check if modelApiUrl ends with a slash and adjust accordingly
     const apiUrl = modelApiUrl.endsWith('/') ? `${modelApiUrl}analyze` : `${modelApiUrl}/analyze`;
     console.log(`Making request to: ${apiUrl}`);
     
-    // If videoUrl is a base64 data URL, we can pass it directly to the Flask app
     const modelResponse = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        video_url: videoUrl,
-        confidence_threshold: 0.5,
-        iou_threshold: 0.4
+        video_url: videoUrl
       })
     });
 
@@ -72,31 +72,33 @@ serve(async (req) => {
     }
 
     const modelResults = await modelResponse.json();
-    console.log('Model results received:', modelResults);
+    console.log('Model results received:', JSON.stringify(modelResults));
 
-    // Just process the basic detection results - no complex analytics needed
-
-    // Update video status to completed and save the output_video_id as detection_video_url
-    const detectionVideoUrl = modelResults.output_video_id ? 
+    // FIXED: Changed from output_video_id to video_id
+    const detectionVideoUrl = modelResults.video_id ? 
       (modelApiUrl.endsWith('/') 
-        ? `${modelApiUrl}download/${modelResults.output_video_id}` 
-        : `${modelApiUrl}/download/${modelResults.output_video_id}`) 
+        ? `${modelApiUrl}download/${modelResults.video_id}` 
+        : `${modelApiUrl}/download/${modelResults.video_id}`) 
       : null;
 
-    const { error: updateError } = await supabase
+    console.log(`Detection video URL: ${detectionVideoUrl}`);
+
+    // Update video status to completed and save the detection video URL
+    const { data, error: updateError } = await supabase
       .from('videos')
       .update({ 
         analysis_status: 'completed',
         detection_video_url: detectionVideoUrl
       })
-      .eq('id', videoId);
+      .eq('id', videoId)
+      .select();
 
     if (updateError) {
-      console.error('Error updating video status:', updateError);
+      console.error('Error updating video status:', JSON.stringify(updateError));
       throw updateError;
     }
 
-    console.log(`Analysis completed for video ${videoId}`);
+    console.log(`Analysis completed for video ${videoId}. Updated record:`, JSON.stringify(data));
 
     return new Response(
       JSON.stringify({ 
@@ -108,11 +110,12 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error in analyze-video function:', error);
+    console.error('Error in analyze-video function:', error.message || error);
+    console.error('Error stack:', error.stack);
     
-    // Make sure to update video status to error if we have videoId
-    try {
-      if (typeof videoId === 'string') {
+    // Update video status to error if we have videoId
+    if (videoId) {
+      try {
         const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
         const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
         const supabase = createClient(supabaseUrl, supabaseKey);
@@ -121,15 +124,15 @@ serve(async (req) => {
           .from('videos')
           .update({ analysis_status: 'error' })
           .eq('id', videoId);
+      } catch (updateError) {
+        console.error('Error updating video status to error:', updateError.message || updateError);
       }
-    } catch (updateError) {
-      console.error('Error updating video status to error:', updateError);
     }
     
     return new Response(
       JSON.stringify({ 
         error: 'Analysis failed', 
-        details: error.message 
+        details: error.message || String(error)
       }),
       { 
         status: 500, 
