@@ -37,16 +37,22 @@ serve(async (req) => {
     const modelApiUrl = Deno.env.get('YOLO_MODEL_API_URL');
     
     if (!modelApiUrl) {
-      throw new Error('YOLO_MODEL_API_URL not configured');
+      throw new Error('YOLO_MODEL_API_URL environment variable is not configured');
     }
 
     console.log(`Calling YOLOv5 model at ${modelApiUrl}`);
+    
+    // Check if the video URL is a blob URL (browser-only) or a data URL
+    if (videoUrl.startsWith('blob:')) {
+      throw new Error('Blob URLs cannot be accessed by the server. Please use base64 data URLs.');
+    }
     
     // Call your Python YOLOv5 API - make sure we're calling the correct endpoint
     // Check if modelApiUrl ends with a slash and adjust accordingly
     const apiUrl = modelApiUrl.endsWith('/') ? `${modelApiUrl}detect` : `${modelApiUrl}/detect`;
     console.log(`Making request to: ${apiUrl}`);
     
+    // If videoUrl is a base64 data URL, we can pass it directly to the Flask app
     const modelResponse = await fetch(apiUrl, {
       method: 'POST',
       headers: {
@@ -60,7 +66,9 @@ serve(async (req) => {
     });
 
     if (!modelResponse.ok) {
-      throw new Error(`Model API returned ${modelResponse.status}: ${await modelResponse.text()}`);
+      const errorText = await modelResponse.text();
+      console.error(`Model API error (${modelResponse.status}): ${errorText}`);
+      throw new Error(`Model API returned ${modelResponse.status}: ${errorText}`);
     }
 
     const modelResults = await modelResponse.json();

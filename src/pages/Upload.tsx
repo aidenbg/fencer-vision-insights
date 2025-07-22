@@ -14,6 +14,7 @@ const Upload = () => {
   const [currentVideoId, setCurrentVideoId] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisComplete, setAnalysisComplete] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [viewMode, setViewMode] = useState<'original' | 'detections' | 'detections-poses'>('original');
   const [bboxesVideoUrl, setBboxesVideoUrl] = useState<string | null>(null);
@@ -91,6 +92,7 @@ const Upload = () => {
     } catch (error) {
       console.error('Error analyzing video:', error);
       setIsAnalyzing(false);
+      setAnalysisError(error.message || 'An error occurred during video analysis');
       
       // Update status to error
       await supabase
@@ -163,6 +165,25 @@ const Upload = () => {
                   <p className="text-sm font-medium mb-2">Analyzing video...</p>
                   <Progress value={progress} className="mb-2" />
                   <p className="text-xs text-muted-foreground">{progress}% complete</p>
+                </Card>
+              )}
+              
+              {/* Analysis Error */}
+              {analysisError && (
+                <Card className="mt-4 p-4 border-destructive">
+                  <p className="text-sm font-medium text-destructive mb-2">Analysis Error</p>
+                  <p className="text-xs text-muted-foreground">{analysisError}</p>
+                  <Button 
+                    className="mt-2 w-full" 
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setAnalysisError(null);
+                      setIsAnalyzing(false);
+                    }}
+                  >
+                    Dismiss
+                  </Button>
                 </Card>
               )}
             </div>

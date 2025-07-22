@@ -58,11 +58,20 @@ export function VideoUpload({ onUpload }: VideoUploadProps = {}) {
 
     setFiles(prev => [...prev, ...newFiles]);
 
-    // Simulate upload progress
+    // Process each file
     newFiles.forEach((file, index) => {
       const actualFile = fileList[index];
-      const videoUrl = URL.createObjectURL(actualFile);
-      simulateUpload(file.id, videoUrl);
+      
+      // Convert file to base64 or another format that can be accessed by server
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        // Get base64 data URL
+        const dataUrl = event.target?.result as string;
+        // Simulate upload progress
+        simulateUpload(file.id, dataUrl);
+      };
+      
+      reader.readAsDataURL(actualFile);
     });
   };
 
@@ -144,23 +153,23 @@ export function VideoUpload({ onUpload }: VideoUploadProps = {}) {
           </p>
           
           <div className="space-y-2">
-            <Button variant="hero" size="lg" onClick={() => document.getElementById('file-input')?.click()}>
-              <Upload className="mr-2 h-4 w-4" />
-              Choose Videos
-            </Button>
-            
-            <input
-              id="file-input"
-              type="file"
-              multiple
-              accept="video/*"
-              className="hidden"
-              onChange={handleFileInput}
-            />
-            
-            <p className="text-xs text-muted-foreground">
-              Supports MP4, MOV, AVI up to 500MB each
-            </p>
+              <Button variant="hero" size="lg" onClick={() => document.getElementById('file-input')?.click()}>
+                <Upload className="mr-2 h-4 w-4" />
+                Choose Videos
+              </Button>
+              
+              <input
+                id="file-input"
+                type="file"
+                multiple
+                accept="video/*"
+                className="hidden"
+                onChange={handleFileInput}
+              />
+              
+              <p className="text-xs text-muted-foreground">
+                Supports MP4, MOV, AVI up to 100MB each. Smaller videos work better.
+              </p>
           </div>
         </div>
       </Card>
