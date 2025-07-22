@@ -5,9 +5,8 @@ import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { VideoUpload } from '@/components/VideoUpload';
 import { VideoPlayer } from '@/components/VideoPlayer';
-import { UploadHistory } from '@/components/UploadHistory';
-import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 const Upload = () => {
   const [uploadedVideo, setUploadedVideo] = useState<string | null>(null);
@@ -25,23 +24,11 @@ const Upload = () => {
     setProgress(0);
     
     try {
-      // Save video to database
-      const { data: videoData, error: uploadError } = await supabase
-        .from('videos')
-        .insert({
-          filename: `video_${Date.now()}.mp4`,
-          file_url: videoUrl,
-          file_size: 0, // In a real implementation, this would be the actual file size
-          analysis_status: 'pending'
-        })
-        .select()
-        .single();
-
-      if (uploadError) throw uploadError;
-      setCurrentVideoId(videoData.id);
-
+      const videoId = `video_${Date.now()}`;
+      setCurrentVideoId(videoId);
+      
       // Start AI analysis
-      await analyzeVideo(videoData.id, videoUrl);
+      await analyzeVideo(videoId, videoUrl);
     } catch (error) {
       console.error('Error uploading video:', error);
       setIsAnalyzing(false);
@@ -50,18 +37,17 @@ const Upload = () => {
 
   const analyzeVideo = async (videoId: string, videoUrl: string) => {
     try {
-      // Update status to analyzing
-      await supabase
-        .from('videos')
-        .update({ analysis_status: 'analyzing' })
-        .eq('id', videoId);
-
       // Call AI analysis edge function
       const { data, error } = await supabase.functions.invoke('analyze-video', {
         body: { videoId, videoUrl }
       });
 
       if (error) throw error;
+      
+      // Set the bboxes video URL from the response
+      if (data?.bboxesVideoUrl) {
+        setBboxesVideoUrl(data.bboxesVideoUrl);
+      }
 
       // Update progress
       const interval = setInterval(() => {
@@ -70,19 +56,6 @@ const Upload = () => {
             clearInterval(interval);
             setIsAnalyzing(false);
             setAnalysisComplete(true);
-            
-            // Fetch the video with bboxes once analysis is complete
-            supabase
-              .from('videos')
-              .select('bboxes_video_url')
-              .eq('id', videoId)
-              .single()
-              .then(({ data, error }) => {
-                if (!error && data?.bboxes_video_url) {
-                  setBboxesVideoUrl(data.bboxes_video_url);
-                }
-              });
-            
             return 100;
           }
           return prev + 15;
@@ -93,12 +66,6 @@ const Upload = () => {
       console.error('Error analyzing video:', error);
       setIsAnalyzing(false);
       setAnalysisError(error.message || 'An error occurred during video analysis');
-      
-      // Update status to error
-      await supabase
-        .from('videos')
-        .update({ analysis_status: 'error' })
-        .eq('id', videoId);
     }
   };
 

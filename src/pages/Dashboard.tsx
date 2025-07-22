@@ -1,8 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { VideoUpload } from "@/components/VideoUpload";
-import { VideoGallery } from "@/components/VideoGallery";
-import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { Button } from "@/components/ui/button";
 import { Swords, LogOut } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -69,8 +67,19 @@ const Dashboard = () => {
 
         {/* Dashboard Content */}
         <div className="space-y-8">
-          <AnalyticsDashboard />
-          <VideoGallery />
+          <Card>
+            <CardHeader>
+              <CardTitle>Fencing AI Dashboard</CardTitle>
+              <CardDescription>
+                Upload and analyze your fencing videos with AI-powered detection
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">
+                Use the upload section above to get started with video analysis.
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
