@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { Play, Pause, RotateCcw, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -17,6 +17,11 @@ export const VideoPlayer = ({ videoUrl, bboxesVideoUrl, className = "", viewMode
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
+
+  // Memoize the current video source to prevent unnecessary re-renders and requests
+  const currentVideoSrc = useMemo(() => {
+    return viewMode === 'original' || !bboxesVideoUrl ? videoUrl : bboxesVideoUrl;
+  }, [viewMode, videoUrl, bboxesVideoUrl]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -103,9 +108,10 @@ export const VideoPlayer = ({ videoUrl, bboxesVideoUrl, className = "", viewMode
       
       <video
         ref={videoRef}
-        src={viewMode === 'original' || !bboxesVideoUrl ? videoUrl : bboxesVideoUrl}
+        src={currentVideoSrc}
         className="w-full aspect-video bg-muted"
         onEnded={() => setIsPlaying(false)}
+        preload="metadata"
       />
       
       <div className="p-4 space-y-3">
