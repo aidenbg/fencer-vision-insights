@@ -23,13 +23,6 @@ export const VideoPlayer = ({ videoUrl, bboxesVideoUrl, className = "", viewMode
     return viewMode === 'original' || !bboxesVideoUrl ? videoUrl : bboxesVideoUrl;
   }, [viewMode, videoUrl, bboxesVideoUrl]);
 
-  // Force video reload when source changes
-  // useEffect(() => {
-  //   const video = videoRef.current;
-  //   if (!video) return;
-  //   
-  //   video.load(); // Force reload the video with new source
-  // }, [currentVideoSrc]);
 
   useEffect(() => {
     const video = videoRef.current;
