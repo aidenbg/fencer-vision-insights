@@ -50,6 +50,17 @@ const Upload = () => {
 
   const analyzeVideo = async (videoId: string, videoUrl: string) => {
     try {
+      // Start progress simulation
+      const interval = setInterval(() => {
+        setProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(interval);
+            return 90; // Stop at 90% until analysis completes
+          }
+          return prev + 15;
+        });
+      }, 800);
+
       // Call AI analysis edge function
       const { data, error } = await supabase.functions.invoke('analyze-video', {
         body: { videoId, videoUrl }
@@ -57,23 +68,18 @@ const Upload = () => {
 
       if (error) throw error;
       
+      // Analysis completed successfully
+      clearInterval(interval);
+      setProgress(100);
+      
       // Set the detection video URL from the response
       if (data?.detectionVideoUrl) {
         setBboxesVideoUrl(data.detectionVideoUrl);
       }
-
-      // Update progress simulation
-      const interval = setInterval(() => {
-        setProgress(prev => {
-          if (prev >= 100) {
-            clearInterval(interval);
-            setIsAnalyzing(false);
-            setAnalysisComplete(true);
-            return 100;
-          }
-          return prev + 15;
-        });
-      }, 800);
+      
+      // Complete the analysis
+      setIsAnalyzing(false);
+      setAnalysisComplete(true);
 
     } catch (error) {
       console.error('Error analyzing video:', error);
