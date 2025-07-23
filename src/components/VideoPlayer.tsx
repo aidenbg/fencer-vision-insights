@@ -100,7 +100,7 @@ export const VideoPlayer = ({ videoUrl, bboxesVideoUrl, className = "", viewMode
               size="sm"
               onClick={() => onViewModeChange('detections')}
             >
-              + Detections
+              Detections
             </Button>
           </div>
         </div>
