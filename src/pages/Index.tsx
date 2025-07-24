@@ -11,7 +11,7 @@ const Index = () => {
   
   // Direct video URLs
   const originalVideoUrl = demoVideo;
-  const detectionsVideoUrl = 'https://drive.google.com/file/d/10u3_JAHyQvwi2w8qgbZUQoCnJFU1xGt2/preview';
+  const detectionsVideoUrl = 'https://drive.google.com/uc?export=download&id=10u3_JAHyQvwi2w8qgbZUQoCnJFU1xGt2';
 
   return (
     <div className="min-h-screen bg-background">
