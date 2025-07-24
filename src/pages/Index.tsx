@@ -107,7 +107,9 @@ const Index = () => {
                   ) : (
                     <VideoPlayer
                       videoUrl={demoVideo}
-                      viewMode="original"
+                      bboxesVideoUrl={null}
+                      viewMode={viewMode}
+                      onViewModeChange={setViewMode}
                       className="w-full"
                     />
                   )}
