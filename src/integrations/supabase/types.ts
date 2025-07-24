@@ -24,6 +24,7 @@ export type Database = {
           original_video_url: string
           session_id: string | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           analysis_status?: string
@@ -34,6 +35,7 @@ export type Database = {
           original_video_url: string
           session_id?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           analysis_status?: string
@@ -44,6 +46,7 @@ export type Database = {
           original_video_url?: string
           session_id?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }

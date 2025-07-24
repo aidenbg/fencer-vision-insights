@@ -19,28 +19,17 @@ serve(async (req) => {
     const requestData = await req.json();
     videoId = requestData.videoId;
     const videoUrl = requestData.videoUrl;
-    const sessionId = requestData.sessionId;
     
     if (!videoId || !videoUrl) {
       throw new Error('Missing videoId or videoUrl');
     }
 
-    console.log(`Starting analysis for video ${videoId} with session ${sessionId}`);
-
     console.log(`Starting analysis for video ${videoId}`);
 
-    // Initialize Supabase client
+    // Initialize Supabase client with service role for server operations
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Set session context for RLS if sessionId is provided
-    if (sessionId) {
-      await supabase.rpc('set_config', {
-        setting_name: 'app.session_id',
-        setting_value: sessionId
-      });
-    }
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Update video status to analyzing
     await supabase
@@ -94,13 +83,6 @@ serve(async (req) => {
 
     console.log(`Detection video URL: ${detectionVideoUrl}`);
 
-    // Set session context again before final update
-    if (sessionId) {
-      await supabase.rpc('set_config', {
-        setting_name: 'app.session_id',
-        setting_value: sessionId
-      });
-    }
 
     // Update video status to completed and save the detection video URL
     const { data, error: updateError } = await supabase
@@ -136,18 +118,8 @@ serve(async (req) => {
     if (videoId) {
       try {
         const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-        const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-        const supabase = createClient(supabaseUrl, supabaseKey);
-        
-        // Set session context for error update if we have sessionId
-        const requestData = await req.json();
-        const sessionId = requestData?.sessionId;
-        if (sessionId) {
-          await supabase.rpc('set_config', {
-            setting_name: 'app.session_id',
-            setting_value: sessionId
-          });
-        }
+        const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+        const supabase = createClient(supabaseUrl, supabaseServiceKey);
         
         await supabase
           .from('videos')

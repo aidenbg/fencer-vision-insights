@@ -18,14 +18,13 @@ const Upload = () => {
   const [viewMode, setViewMode] = useState<'original' | 'detections'>('original');
   const [bboxesVideoUrl, setBboxesVideoUrl] = useState<string | null>(null);
 
-  // Generate or get session ID for anonymous session isolation
-  const getSessionId = () => {
-    let sessionId = sessionStorage.getItem('fencing_session_id');
-    if (!sessionId) {
-      sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      sessionStorage.setItem('fencing_session_id', sessionId);
+  // Ensure anonymous authentication
+  const ensureAuth = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      const { error } = await supabase.auth.signInAnonymously();
+      if (error) throw error;
     }
-    return sessionId;
   };
 
   const handleVideoUpload = async (videoUrl: string) => {
@@ -34,22 +33,20 @@ const Upload = () => {
     setProgress(0);
     
     try {
-      const sessionId = getSessionId();
+      // Ensure user is authenticated (anonymous)
+      await ensureAuth();
       
-      // Set session context for RLS
-      await supabase.rpc('set_config', {
-        setting_name: 'app.session_id',
-        setting_value: sessionId
-      });
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Authentication failed');
 
-      // Create video record in database with session ID
+      // Create video record in database with user ID
       const { data: videoRecord, error: insertError } = await supabase
         .from('videos')
         .insert({
           filename: `video_${Date.now()}.mp4`,
           original_video_url: videoUrl,
           analysis_status: 'pending',
-          session_id: sessionId
+          user_id: user.id
         })
         .select()
         .single();
@@ -69,8 +66,6 @@ const Upload = () => {
 
   const analyzeVideo = async (videoId: string, videoUrl: string) => {
     try {
-      const sessionId = getSessionId();
-      
       // Start progress simulation
       const interval = setInterval(() => {
         setProgress(prev => {
@@ -82,12 +77,11 @@ const Upload = () => {
         });
       }, 800);
 
-      // Call AI analysis edge function with session ID
+      // Call AI analysis edge function
       const { data, error } = await supabase.functions.invoke('analyze-video', {
         body: { 
           videoId, 
-          videoUrl,
-          sessionId 
+          videoUrl
         }
       });
 
@@ -96,12 +90,6 @@ const Upload = () => {
       // Analysis completed successfully
       clearInterval(interval);
       setProgress(100);
-      
-      // Set session context and refresh video data
-      await supabase.rpc('set_config', {
-        setting_name: 'app.session_id',
-        setting_value: sessionId
-      });
       
       // Fetch updated video data
       const { data: videoData, error: fetchError } = await supabase
