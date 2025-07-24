@@ -18,19 +18,38 @@ const Upload = () => {
   const [viewMode, setViewMode] = useState<'original' | 'detections'>('original');
   const [bboxesVideoUrl, setBboxesVideoUrl] = useState<string | null>(null);
 
+  // Generate or get session ID for anonymous session isolation
+  const getSessionId = () => {
+    let sessionId = sessionStorage.getItem('fencing_session_id');
+    if (!sessionId) {
+      sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      sessionStorage.setItem('fencing_session_id', sessionId);
+    }
+    return sessionId;
+  };
+
   const handleVideoUpload = async (videoUrl: string) => {
     setUploadedVideo(videoUrl);
     setIsAnalyzing(true);
     setProgress(0);
     
     try {
-      // Create video record in database
+      const sessionId = getSessionId();
+      
+      // Set session context for RLS
+      await supabase.rpc('set_config', {
+        setting_name: 'app.session_id',
+        setting_value: sessionId
+      });
+
+      // Create video record in database with session ID
       const { data: videoRecord, error: insertError } = await supabase
         .from('videos')
         .insert({
           filename: `video_${Date.now()}.mp4`,
           original_video_url: videoUrl,
-          analysis_status: 'pending'
+          analysis_status: 'pending',
+          session_id: sessionId
         })
         .select()
         .single();
@@ -50,6 +69,8 @@ const Upload = () => {
 
   const analyzeVideo = async (videoId: string, videoUrl: string) => {
     try {
+      const sessionId = getSessionId();
+      
       // Start progress simulation
       const interval = setInterval(() => {
         setProgress(prev => {
@@ -61,9 +82,13 @@ const Upload = () => {
         });
       }, 800);
 
-      // Call AI analysis edge function
+      // Call AI analysis edge function with session ID
       const { data, error } = await supabase.functions.invoke('analyze-video', {
-        body: { videoId, videoUrl }
+        body: { 
+          videoId, 
+          videoUrl,
+          sessionId 
+        }
       });
 
       if (error) throw error;
@@ -72,9 +97,24 @@ const Upload = () => {
       clearInterval(interval);
       setProgress(100);
       
-      // Set the detection video URL from the response
-      if (data?.detectionVideoUrl) {
-        setBboxesVideoUrl(data.detectionVideoUrl);
+      // Set session context and refresh video data
+      await supabase.rpc('set_config', {
+        setting_name: 'app.session_id',
+        setting_value: sessionId
+      });
+      
+      // Fetch updated video data
+      const { data: videoData, error: fetchError } = await supabase
+        .from('videos')
+        .select('*')
+        .eq('id', videoId)
+        .single();
+
+      if (fetchError) throw fetchError;
+      
+      // Set the detection video URL from the database
+      if (videoData.detection_video_url) {
+        setBboxesVideoUrl(videoData.detection_video_url);
       }
       
       // Complete the analysis
