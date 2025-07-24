@@ -13,20 +13,47 @@ interface VideoPlayerProps {
 
 export const VideoPlayer = ({ videoUrl, bboxesVideoUrl, className = "", viewMode = 'original', onViewModeChange }: VideoPlayerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const detectionsVideoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // Memoize the current video source to prevent unnecessary re-renders and requests
-  const currentVideoSrc = useMemo(() => {
-    return viewMode === 'original' || !bboxesVideoUrl ? videoUrl : bboxesVideoUrl;
-  }, [viewMode, videoUrl, bboxesVideoUrl]);
+  // Get the currently active video element
+  const getCurrentVideo = () => {
+    return viewMode === 'detections' && bboxesVideoUrl && detectionsVideoRef.current 
+      ? detectionsVideoRef.current 
+      : videoRef.current;
+  };
 
+
+  // Sync videos when switching modes
+  useEffect(() => {
+    const originalVideo = videoRef.current;
+    const detectionsVideo = detectionsVideoRef.current;
+    
+    if (originalVideo && detectionsVideo && bboxesVideoUrl) {
+      if (viewMode === 'detections') {
+        // Sync detections video to original video time
+        detectionsVideo.currentTime = originalVideo.currentTime;
+        detectionsVideo.muted = originalVideo.muted;
+        if (!originalVideo.paused) {
+          detectionsVideo.play();
+        }
+      } else {
+        // Sync original video to detections video time  
+        originalVideo.currentTime = detectionsVideo.currentTime;
+        originalVideo.muted = detectionsVideo.muted;
+        if (!detectionsVideo.paused) {
+          originalVideo.play();
+        }
+      }
+    }
+  }, [viewMode, bboxesVideoUrl]);
 
   useEffect(() => {
-    const video = videoRef.current;
+    const video = getCurrentVideo();
     if (!video) return;
 
     const updateTime = () => setCurrentTime(video.currentTime);
@@ -39,7 +66,7 @@ export const VideoPlayer = ({ videoUrl, bboxesVideoUrl, className = "", viewMode
       video.removeEventListener('timeupdate', updateTime);
       video.removeEventListener('loadedmetadata', updateDuration);
     };
-  }, []);
+  }, [viewMode, bboxesVideoUrl]);
 
   // Space key functionality
   useEffect(() => {
@@ -55,11 +82,14 @@ export const VideoPlayer = ({ videoUrl, bboxesVideoUrl, className = "", viewMode
   }, [isPlaying]);
 
   const togglePlay = () => {
-    const video = videoRef.current;
+    const video = getCurrentVideo();
     if (!video) return;
 
     if (isPlaying) {
       video.pause();
+      // Pause the other video too
+      const otherVideo = viewMode === 'detections' ? videoRef.current : detectionsVideoRef.current;
+      if (otherVideo) otherVideo.pause();
     } else {
       video.play();
     }
@@ -67,32 +97,50 @@ export const VideoPlayer = ({ videoUrl, bboxesVideoUrl, className = "", viewMode
   };
 
   const handleSeek = (value: number[]) => {
-    const video = videoRef.current;
+    const video = getCurrentVideo();
     if (!video) return;
     
     const time = value[0];
     video.currentTime = time;
     setCurrentTime(time);
+    
+    // Sync the other video too
+    const otherVideo = viewMode === 'detections' ? videoRef.current : detectionsVideoRef.current;
+    if (otherVideo) {
+      otherVideo.currentTime = time;
+    }
   };
 
   const restart = () => {
-    const video = videoRef.current;
+    const video = getCurrentVideo();
     if (!video) return;
     
     video.currentTime = 0;
     setCurrentTime(0);
+    
+    // Restart the other video too
+    const otherVideo = viewMode === 'detections' ? videoRef.current : detectionsVideoRef.current;
+    if (otherVideo) {
+      otherVideo.currentTime = 0;
+    }
   };
 
   const toggleMute = () => {
-    const video = videoRef.current;
+    const video = getCurrentVideo();
     if (!video) return;
     
     video.muted = !video.muted;
     setIsMuted(video.muted);
+    
+    // Sync the other video too
+    const otherVideo = viewMode === 'detections' ? videoRef.current : detectionsVideoRef.current;
+    if (otherVideo) {
+      otherVideo.muted = video.muted;
+    }
   };
 
   const toggleFullscreen = () => {
-    const video = videoRef.current;
+    const video = getCurrentVideo();
     if (!video) return;
 
     if (!isFullscreen) {
@@ -137,13 +185,28 @@ export const VideoPlayer = ({ videoUrl, bboxesVideoUrl, className = "", viewMode
         </div>
       )}
       
-      <video
-        ref={videoRef}
-        src={currentVideoSrc}
-        className="w-full aspect-video bg-muted"
-        onEnded={() => setIsPlaying(false)}
-        preload="metadata"
-      />
+      {/* Video Container */}
+      <div className="relative w-full aspect-video bg-muted">
+        {/* Original Video */}
+        <video
+          ref={videoRef}
+          src={videoUrl}
+          className={`absolute inset-0 w-full h-full ${viewMode === 'original' ? 'block' : 'hidden'}`}
+          onEnded={() => setIsPlaying(false)}
+          preload="metadata"
+        />
+        
+        {/* Detections Video */}
+        {bboxesVideoUrl && (
+          <video
+            ref={detectionsVideoRef}
+            src={bboxesVideoUrl}
+            className={`absolute inset-0 w-full h-full ${viewMode === 'detections' ? 'block' : 'hidden'}`}
+            onEnded={() => setIsPlaying(false)}
+            preload="metadata"
+          />
+        )}
+      </div>
       
       <div className="p-4 space-y-3">
         {/* Progress Bar */}
