@@ -3,8 +3,41 @@ import { Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
+import { VideoPlayer } from '@/components/VideoPlayer';
+import { useState, useEffect } from 'react';
+import { getDemoVideo, setupDemoVideo } from '@/utils/setupDemoVideo';
+import demoVideo from '@/assets/demo-fencing-video.mp4';
 
 const Index = () => {
+  const [demoVideoData, setDemoVideoData] = useState<any>(null);
+  const [isSettingUp, setIsSettingUp] = useState(false);
+  const [viewMode, setViewMode] = useState<'original' | 'detections'>('original');
+
+  useEffect(() => {
+    loadDemoVideo();
+  }, []);
+
+  const loadDemoVideo = async () => {
+    try {
+      // First try to get existing demo video
+      const existingDemo = await getDemoVideo();
+      if (existingDemo) {
+        setDemoVideoData(existingDemo);
+        return;
+      }
+
+      // If no demo video exists, set it up
+      setIsSettingUp(true);
+      const newDemo = await setupDemoVideo();
+      if (newDemo?.demoVideo) {
+        setDemoVideoData(newDemo.demoVideo);
+      }
+    } catch (error) {
+      console.error('Failed to load demo video:', error);
+    } finally {
+      setIsSettingUp(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -49,67 +82,85 @@ const Index = () => {
       {/* Demo Section */}
       <section className="py-20 bg-muted/30">
         <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-6xl mx-auto">
             <h2 className="text-3xl font-bold text-center mb-12">See It In Action</h2>
             <Card className="p-8">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Demo Video */}
-                <div>
-                  <div className="aspect-video bg-muted rounded-lg flex items-center justify-center mb-4">
-                    <div className="text-center">
-                      <Play className="h-16 w-16 mx-auto mb-2 text-muted-foreground" />
-                      <p className="text-muted-foreground">Demo Video</p>
-                      <p className="text-xs text-muted-foreground mt-1">Fencing bout analysis</p>
+              <div className="space-y-8">
+                {/* Demo Video - Full Width */}
+                <div className="w-full">
+                  {isSettingUp ? (
+                    <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+                        <p className="text-muted-foreground">Processing demo video...</p>
+                        <p className="text-xs text-muted-foreground mt-1">This may take a few moments</p>
+                      </div>
                     </div>
-                  </div>
+                  ) : demoVideoData ? (
+                    <VideoPlayer
+                      videoUrl={demoVideoData.original_video_url}
+                      bboxesVideoUrl={demoVideoData.detection_video_url}
+                      viewMode={viewMode}
+                      onViewModeChange={setViewMode}
+                      className="w-full"
+                    />
+                  ) : (
+                    <VideoPlayer
+                      videoUrl={demoVideo}
+                      viewMode="original"
+                      className="w-full"
+                    />
+                  )}
                 </div>
-
+                
                 {/* Demo Results */}
                 <div className="space-y-4">
                   <h3 className="text-xl font-semibold">AI Detection Results</h3>
                   
-                  {/* Object Detection */}
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-medium text-primary">Objects Detected:</h4>
-                    <div className="grid grid-cols-1 gap-2">
-                      <div className="flex justify-between p-2 bg-muted/30 rounded">
-                        <span className="text-sm">Fencer 1</span>
-                        <span className="text-sm text-primary">97% confidence</span>
-                      </div>
-                      <div className="flex justify-between p-2 bg-muted/30 rounded">
-                        <span className="text-sm">Fencer 2</span>
-                        <span className="text-sm text-primary">95% confidence</span>
-                      </div>
-                      <div className="flex justify-between p-2 bg-muted/30 rounded">
-                        <span className="text-sm">Foil</span>
-                        <span className="text-sm text-primary">99% confidence</span>
-                      </div>
-                      <div className="flex justify-between p-2 bg-muted/30 rounded">
-                        <span className="text-sm">Target Area</span>
-                        <span className="text-sm text-primary">92% confidence</span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Object Detection */}
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium text-primary">Objects Detected:</h4>
+                      <div className="grid grid-cols-1 gap-2">
+                        <div className="flex justify-between p-2 bg-muted/30 rounded">
+                          <span className="text-sm">Fencer 1</span>
+                          <span className="text-sm text-primary">97% confidence</span>
+                        </div>
+                        <div className="flex justify-between p-2 bg-muted/30 rounded">
+                          <span className="text-sm">Fencer 2</span>
+                          <span className="text-sm text-primary">95% confidence</span>
+                        </div>
+                        <div className="flex justify-between p-2 bg-muted/30 rounded">
+                          <span className="text-sm">Foil</span>
+                          <span className="text-sm text-primary">99% confidence</span>
+                        </div>
+                        <div className="flex justify-between p-2 bg-muted/30 rounded">
+                          <span className="text-sm">Target Area</span>
+                          <span className="text-sm text-primary">92% confidence</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Action Recognition */}
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-medium text-primary">Actions Detected:</h4>
-                    <div className="grid grid-cols-1 gap-2">
-                      <div className="flex justify-between p-2 bg-muted/30 rounded">
-                        <span className="text-sm">Attack</span>
-                        <span className="text-sm text-primary">8 instances</span>
-                      </div>
-                      <div className="flex justify-between p-2 bg-muted/30 rounded">
-                        <span className="text-sm">Parry</span>
-                        <span className="text-sm text-primary">6 instances</span>
-                      </div>
-                      <div className="flex justify-between p-2 bg-muted/30 rounded">
-                        <span className="text-sm">Riposte</span>
-                        <span className="text-sm text-primary">4 instances</span>
-                      </div>
-                      <div className="flex justify-between p-2 bg-muted/30 rounded">
-                        <span className="text-sm">Lunge</span>
-                        <span className="text-sm text-primary">12 instances</span>
+                    {/* Action Recognition */}
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium text-primary">Actions Detected:</h4>
+                      <div className="grid grid-cols-1 gap-2">
+                        <div className="flex justify-between p-2 bg-muted/30 rounded">
+                          <span className="text-sm">Attack</span>
+                          <span className="text-sm text-primary">8 instances</span>
+                        </div>
+                        <div className="flex justify-between p-2 bg-muted/30 rounded">
+                          <span className="text-sm">Parry</span>
+                          <span className="text-sm text-primary">6 instances</span>
+                        </div>
+                        <div className="flex justify-between p-2 bg-muted/30 rounded">
+                          <span className="text-sm">Riposte</span>
+                          <span className="text-sm text-primary">4 instances</span>
+                        </div>
+                        <div className="flex justify-between p-2 bg-muted/30 rounded">
+                          <span className="text-sm">Lunge</span>
+                          <span className="text-sm text-primary">12 instances</span>
+                        </div>
                       </div>
                     </div>
                   </div>
