@@ -14,30 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      demo_videos: {
-        Row: {
-          created_at: string
-          detection_video_url: string | null
-          id: string
-          original_video_url: string
-          title: string
-        }
-        Insert: {
-          created_at?: string
-          detection_video_url?: string | null
-          id?: string
-          original_video_url: string
-          title: string
-        }
-        Update: {
-          created_at?: string
-          detection_video_url?: string | null
-          id?: string
-          original_video_url?: string
-          title?: string
-        }
-        Relationships: []
-      }
       videos: {
         Row: {
           analysis_status: string

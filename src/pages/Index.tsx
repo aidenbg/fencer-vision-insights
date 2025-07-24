@@ -1,43 +1,17 @@
-import { Swords, Upload, BarChart3, Target } from 'lucide-react';
-import { Play } from 'lucide-react';
+import { Swords, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
 import { VideoPlayer } from '@/components/VideoPlayer';
-import { useState, useEffect } from 'react';
-import { getDemoVideo, setupDemoVideo } from '@/utils/setupDemoVideo';
+import { useState } from 'react';
 import demoVideo from '@/assets/demo-fencing-video.mp4';
 
 const Index = () => {
-  const [demoVideoData, setDemoVideoData] = useState<any>(null);
-  const [isSettingUp, setIsSettingUp] = useState(false);
   const [viewMode, setViewMode] = useState<'original' | 'detections'>('original');
-
-  useEffect(() => {
-    loadDemoVideo();
-  }, []);
-
-  const loadDemoVideo = async () => {
-    try {
-      // First try to get existing demo video
-      const existingDemo = await getDemoVideo();
-      if (existingDemo) {
-        setDemoVideoData(existingDemo);
-        return;
-      }
-
-      // If no demo video exists, set it up
-      setIsSettingUp(true);
-      const newDemo = await setupDemoVideo();
-      if (newDemo?.demoVideo) {
-        setDemoVideoData(newDemo.demoVideo);
-      }
-    } catch (error) {
-      console.error('Failed to load demo video:', error);
-    } finally {
-      setIsSettingUp(false);
-    }
-  };
+  
+  // Direct video URLs
+  const originalVideoUrl = demoVideo;
+  const detectionsVideoUrl = 'https://drive.google.com/file/d/10u3_JAHyQvwi2w8qgbZUQoCnJFU1xGt2/preview';
 
   return (
     <div className="min-h-screen bg-background">
@@ -88,31 +62,13 @@ const Index = () => {
               <div className="space-y-8">
                 {/* Demo Video - Full Width */}
                 <div className="w-full">
-                  {isSettingUp ? (
-                    <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
-                      <div className="text-center">
-                        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-                        <p className="text-muted-foreground">Processing demo video...</p>
-                        <p className="text-xs text-muted-foreground mt-1">This may take a few moments</p>
-                      </div>
-                    </div>
-                  ) : demoVideoData ? (
-                    <VideoPlayer
-                      videoUrl={demoVideoData.original_video_url}
-                      bboxesVideoUrl={demoVideoData.detection_video_url}
-                      viewMode={viewMode}
-                      onViewModeChange={setViewMode}
-                      className="w-full"
-                    />
-                  ) : (
-                    <VideoPlayer
-                      videoUrl={demoVideo}
-                      bboxesVideoUrl={null}
-                      viewMode={viewMode}
-                      onViewModeChange={setViewMode}
-                      className="w-full"
-                    />
-                  )}
+                  <VideoPlayer
+                    videoUrl={originalVideoUrl}
+                    bboxesVideoUrl={detectionsVideoUrl}
+                    viewMode={viewMode}
+                    onViewModeChange={setViewMode}
+                    className="w-full"
+                  />
                 </div>
                 
                 {/* Demo Results */}
