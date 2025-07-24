@@ -129,20 +129,6 @@ const Upload = () => {
   };
 
 
-  const mockDetections = {
-    objects: [
-      { name: 'Fencer 1', confidence: 97 },
-      { name: 'Fencer 2', confidence: 95 },
-      { name: 'Foil', confidence: 99 },
-      { name: 'Target Area', confidence: 92 }
-    ],
-    actions: [
-      { name: 'Attack', count: 8 },
-      { name: 'Parry', count: 6 },
-      { name: 'Riposte', count: 4 },
-      { name: 'Lunge', count: 12 }
-    ]
-  };
 
   return (
     <div className="min-h-screen bg-background">

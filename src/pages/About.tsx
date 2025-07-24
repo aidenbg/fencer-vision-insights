@@ -1,4 +1,4 @@
-import { ArrowLeft, Swords, Target, BarChart3, Zap } from 'lucide-react';
+import { ArrowLeft, Swords } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
