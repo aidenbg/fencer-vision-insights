@@ -173,7 +173,7 @@ const Upload = () => {
                   <li>• Side view angle where both fencers are clearly visible</li>
                   <li>• Good lighting and stable camera position</li>
                   <li>• Clear view of the action and scoring area</li>
-                  <li>• See our demo video below for reference</li>
+                  <li>• See demo video on home page for reference</li>
                 </ul>
               </div>
             </div>
