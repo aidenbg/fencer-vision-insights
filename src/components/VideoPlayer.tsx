@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { Play, Pause, RotateCcw, Volume2, VolumeX } from 'lucide-react';
+import { Play, Pause, RotateCcw, Volume2, VolumeX, Maximize, Minimize } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 
@@ -17,6 +17,7 @@ export const VideoPlayer = ({ videoUrl, bboxesVideoUrl, className = "", viewMode
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Memoize the current video source to prevent unnecessary re-renders and requests
   const currentVideoSrc = useMemo(() => {
@@ -39,6 +40,19 @@ export const VideoPlayer = ({ videoUrl, bboxesVideoUrl, className = "", viewMode
       video.removeEventListener('loadedmetadata', updateDuration);
     };
   }, []);
+
+  // Space key functionality
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (event.code === 'Space') {
+        event.preventDefault();
+        togglePlay();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyPress);
+    return () => document.removeEventListener('keydown', handleKeyPress);
+  }, [isPlaying]);
 
   const togglePlay = () => {
     const video = videoRef.current;
@@ -75,6 +89,22 @@ export const VideoPlayer = ({ videoUrl, bboxesVideoUrl, className = "", viewMode
     
     video.muted = !video.muted;
     setIsMuted(video.muted);
+  };
+
+  const toggleFullscreen = () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (!isFullscreen) {
+      if (video.requestFullscreen) {
+        video.requestFullscreen();
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+    setIsFullscreen(!isFullscreen);
   };
 
   const formatTime = (time: number) => {
@@ -160,6 +190,19 @@ export const VideoPlayer = ({ videoUrl, bboxesVideoUrl, className = "", viewMode
                 <VolumeX className="h-4 w-4" />
               ) : (
                 <Volume2 className="h-4 w-4" />
+              )}
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleFullscreen}
+              className="h-8 w-8 p-0"
+            >
+              {isFullscreen ? (
+                <Minimize className="h-4 w-4" />
+              ) : (
+                <Maximize className="h-4 w-4" />
               )}
             </Button>
           </div>

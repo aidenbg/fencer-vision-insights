@@ -166,7 +166,16 @@ const Upload = () => {
           <div className="space-y-8">
             <div className="text-center">
               <h1 className="text-3xl font-bold mb-4">Fencing Video Analysis</h1>
-              <p className="text-muted-foreground mb-8">Upload your video to analyze fencing techniques and performance</p>
+              <p className="text-muted-foreground mb-4">Upload your video to analyze fencing techniques and performance</p>
+              <div className="bg-muted/50 p-4 rounded-lg mb-8 max-w-2xl mx-auto">
+                <h3 className="font-semibold mb-2">Video Requirements:</h3>
+                <ul className="text-sm text-muted-foreground text-left space-y-1">
+                  <li>• Side view angle where both fencers are clearly visible</li>
+                  <li>• Good lighting and stable camera position</li>
+                  <li>• Clear view of the action and scoring area</li>
+                  <li>• See our demo video below for reference</li>
+                </ul>
+              </div>
             </div>
 
             <div className="max-w-2xl mx-auto">
@@ -174,20 +183,30 @@ const Upload = () => {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Video Section */}
+          <div className="space-y-6">
+            {/* Video Section - Full Width */}
             <div>
-              <h2 className="text-2xl font-bold mb-4">Video Analysis</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold">Video Analysis</h2>
+                <div className="text-sm text-muted-foreground">
+                  Press <kbd className="px-2 py-1 bg-muted rounded text-xs">Space</kbd> to play/pause
+                </div>
+              </div>
+              
               <VideoPlayer 
                 videoUrl={uploadedVideo}
                 bboxesVideoUrl={bboxesVideoUrl}
                 viewMode={viewMode}
                 onViewModeChange={setViewMode}
+                className="max-w-none"
               />
-              
+            </div>
+            
+            {/* Controls and Status Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Analysis Progress */}
               {isAnalyzing && (
-                <Card className="mt-4 p-4">
+                <Card className="p-4">
                   <p className="text-sm font-medium mb-2">Analyzing video...</p>
                   <Progress value={progress} className="mb-2" />
                   <p className="text-xs text-muted-foreground">{progress}% complete</p>
@@ -196,11 +215,10 @@ const Upload = () => {
               
               {/* Analysis Error */}
               {analysisError && (
-                <Card className="mt-4 p-4 border-destructive">
+                <Card className="p-4 border-destructive lg:col-span-2">
                   <p className="text-sm font-medium text-destructive mb-2">Analysis Error</p>
-                  <p className="text-xs text-muted-foreground">{analysisError}</p>
+                  <p className="text-xs text-muted-foreground mb-3">{analysisError}</p>
                   <Button 
-                    className="mt-2 w-full" 
                     variant="outline"
                     size="sm"
                     onClick={() => {
@@ -212,31 +230,26 @@ const Upload = () => {
                   </Button>
                 </Card>
               )}
-            </div>
-
-            {/* Simple Actions */}
-            <div className="space-y-6">
+              
+              {/* Analysis Complete */}
               {analysisComplete && (
-                <Card className="p-6">
-                  <h3 className="text-lg font-semibold mb-4">Analysis Complete</h3>
-                  <p className="text-muted-foreground mb-4">
+                <Card className="p-4 lg:col-span-2">
+                  <h3 className="text-lg font-semibold mb-3">Analysis Complete</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
                     Use the buttons above the video to switch between original and detection views.
                   </p>
-                  <div className="space-y-2">
-                    <Button 
-                      className="w-full" 
-                      variant="outline"
-                      onClick={() => {
-                        setUploadedVideo(null);
-                        setCurrentVideoId(null);
-                        setAnalysisComplete(false);
-                        setViewMode('original');
-                        setBboxesVideoUrl(null);
-                      }}
-                    >
-                      Upload Another Video
-                    </Button>
-                  </div>
+                  <Button 
+                    variant="outline"
+                    onClick={() => {
+                      setUploadedVideo(null);
+                      setCurrentVideoId(null);
+                      setAnalysisComplete(false);
+                      setViewMode('original');
+                      setBboxesVideoUrl(null);
+                    }}
+                  >
+                    Upload Another Video
+                  </Button>
                 </Card>
               )}
             </div>
