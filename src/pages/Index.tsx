@@ -5,13 +5,14 @@ import { Link } from 'react-router-dom';
 import { VideoPlayer } from '@/components/VideoPlayer';
 import { useState } from 'react';
 import demoVideo from '@/assets/demo-fencing-video.mp4';
+import demoDetectionsVideo from '@/assets/demo-fencing-detections.mp4';
 
 const Index = () => {
   const [viewMode, setViewMode] = useState<'original' | 'detections'>('original');
   
   // Direct video URLs
   const originalVideoUrl = demoVideo;
-  const detectionsVideoUrl = 'https://drive.google.com/uc?export=download&id=10u3_JAHyQvwi2w8qgbZUQoCnJFU1xGt2';
+  const detectionsVideoUrl = demoDetectionsVideo;
 
   return (
     <div className="min-h-screen bg-background">
