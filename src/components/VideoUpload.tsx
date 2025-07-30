@@ -3,6 +3,7 @@ import { Upload, Video, FileX, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 interface UploadedFile {
   id: string;
@@ -47,7 +48,7 @@ export function VideoUpload({ onUpload }: VideoUploadProps = {}) {
     handleFiles(selectedFiles);
   };
 
-  const handleFiles = (fileList: File[]) => {
+  const handleFiles = async (fileList: File[]) => {
     const newFiles: UploadedFile[] = fileList.map(file => ({
       id: Math.random().toString(36).substr(2, 9),
       name: file.name,
@@ -59,49 +60,76 @@ export function VideoUpload({ onUpload }: VideoUploadProps = {}) {
     setFiles(prev => [...prev, ...newFiles]);
 
     // Process each file
-    newFiles.forEach((file, index) => {
-      const actualFile = fileList[index];
+    for (let i = 0; i < newFiles.length; i++) {
+      const file = newFiles[i];
+      const actualFile = fileList[i];
       
-      // Convert file to base64 or another format that can be accessed by server
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        // Get base64 data URL
-        const dataUrl = event.target?.result as string;
-        // Simulate upload progress
-        simulateUpload(file.id, dataUrl);
-      };
-      
-      reader.readAsDataURL(actualFile);
-    });
-  };
-
-  const simulateUpload = (fileId: string, videoUrl: string) => {
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += Math.random() * 30;
-      if (progress >= 100) {
-        progress = 100;
-        clearInterval(interval);
+      try {
+        await uploadToStorage(file.id, actualFile);
+      } catch (error) {
+        console.error('Upload failed:', error);
         setFiles(prev => prev.map(f => 
-          f.id === fileId 
-            ? { ...f, status: 'uploaded', progress: 100 }
-            : f
-        ));
-        
-        // Call onUpload callback when upload is complete with actual video URL
-        setTimeout(() => {
-          if (onUpload) {
-            onUpload(videoUrl);
-          }
-        }, 100);
-      } else {
-        setFiles(prev => prev.map(f => 
-          f.id === fileId 
-            ? { ...f, progress }
+          f.id === file.id 
+            ? { ...f, status: 'error', progress: 0 }
             : f
         ));
       }
+    }
+  };
+
+  const uploadToStorage = async (fileId: string, file: File) => {
+    // Ensure user is authenticated (anonymous)
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      const { error: authError } = await supabase.auth.signInAnonymously();
+      if (authError) throw authError;
+      // Wait for auth to be established
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+    const fileName = `${Date.now()}_${file.name}`;
+    
+    // Simulate progress during upload
+    let progress = 0;
+    const progressInterval = setInterval(() => {
+      progress += Math.random() * 20;
+      if (progress > 90) progress = 90;
+      setFiles(prev => prev.map(f => 
+        f.id === fileId ? { ...f, progress } : f
+      ));
     }, 200);
+
+    try {
+      const { data, error } = await supabase.storage
+        .from('demo-videos')
+        .upload(fileName, file);
+
+      if (error) throw error;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('demo-videos')
+        .getPublicUrl(fileName);
+
+      clearInterval(progressInterval);
+      
+      setFiles(prev => prev.map(f => 
+        f.id === fileId 
+          ? { ...f, status: 'uploaded', progress: 100 }
+          : f
+      ));
+
+      // Call onUpload callback with Supabase URL
+      setTimeout(() => {
+        if (onUpload) {
+          onUpload(publicUrl);
+        }
+      }, 100);
+
+    } catch (error) {
+      clearInterval(progressInterval);
+      throw error;
+    }
   };
 
   const formatFileSize = (bytes: number) => {

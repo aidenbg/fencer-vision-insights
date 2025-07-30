@@ -48,9 +48,9 @@ serve(async (req) => {
 
     console.log(`Calling YOLOv5 model at ${modelApiUrl}`);
     
-    // Check if the video URL is a blob URL (browser-only) or a data URL
-    if (videoUrl.startsWith('blob:')) {
-      throw new Error('Blob URLs cannot be accessed by the server. Please use base64 data URLs.');
+    // Validate video URL - reject blob and data URLs
+    if (videoUrl.startsWith('blob:') || videoUrl.startsWith('data:')) {
+      throw new Error('Invalid video URL. Please upload video to storage first.');
     }
     
     // Call your Python YOLOv5 API - use the correct /analyze endpoint
@@ -76,14 +76,41 @@ serve(async (req) => {
     const modelResults = await modelResponse.json();
     console.log('Model results received:', JSON.stringify(modelResults));
 
-    // FIXED: Changed from output_video_id to video_id
-    const detectionVideoUrl = modelResults.video_id ? 
-      (modelApiUrl.endsWith('/') 
-        ? `${modelApiUrl}download/${modelResults.video_id}` 
-        : `${modelApiUrl}/download/${modelResults.video_id}`) 
-      : null;
+    let detectionVideoUrl = null;
 
-    console.log(`Detection video URL: ${detectionVideoUrl}`);
+    // Check if Flask returned a video directly
+    if (modelResponse.headers.get('content-type')?.includes('video')) {
+      console.log('Flask returned video directly, uploading to Supabase Storage...');
+      
+      // Upload the video to Supabase Storage
+      const videoBlob = await modelResponse.blob();
+      const fileName = `detections_${videoId}_${Date.now()}.mp4`;
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('demo-videos')
+        .upload(fileName, videoBlob, {
+          contentType: 'video/mp4'
+        });
+
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError);
+        throw new Error(`Failed to upload detection video: ${uploadError.message}`);
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('demo-videos')
+        .getPublicUrl(fileName);
+      
+      detectionVideoUrl = publicUrl;
+      console.log(`Detection video uploaded to storage: ${detectionVideoUrl}`);
+    } else if (modelResults.video_id) {
+      // Flask returned a video ID, construct download URL
+      detectionVideoUrl = modelApiUrl.endsWith('/') 
+        ? `${modelApiUrl}download/${modelResults.video_id}` 
+        : `${modelApiUrl}/download/${modelResults.video_id}`;
+      console.log(`Detection video URL from Flask: ${detectionVideoUrl}`);
+    }
 
 
     // Update video status to completed and save the detection video URL

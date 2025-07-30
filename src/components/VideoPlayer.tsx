@@ -160,20 +160,19 @@ export const VideoPlayer = ({ videoUrl, bboxesVideoUrl, className = "", viewMode
     const fileName = `fencing_${viewMode}_video_${Date.now()}.mp4`;
     
     try {
-      // Create a temporary anchor element to trigger download
-      const link = document.createElement('a');
-      link.href = currentUrl;
-      link.download = fileName;
-      link.target = '_blank';
+      const response = await fetch(currentUrl);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
       
-      // For mobile devices, try opening in new tab if download doesn't work
-      if (/Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-        window.open(currentUrl, '_blank');
-      } else {
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up the object URL
+      URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Download failed:', error);
       // Fallback: open video in new tab
@@ -204,6 +203,7 @@ export const VideoPlayer = ({ videoUrl, bboxesVideoUrl, className = "", viewMode
               variant={viewMode === 'detections' ? 'default' : 'outline'} 
               size="sm"
               onClick={() => onViewModeChange('detections')}
+              disabled={!bboxesVideoUrl}
             >
               Detections
             </Button>
@@ -220,6 +220,7 @@ export const VideoPlayer = ({ videoUrl, bboxesVideoUrl, className = "", viewMode
           className={`absolute inset-0 w-full h-full ${viewMode === 'original' ? 'block' : 'hidden'}`}
           onEnded={() => setIsPlaying(false)}
           preload="metadata"
+          playsInline
         />
         
         {/* Detections Video */}
@@ -230,6 +231,7 @@ export const VideoPlayer = ({ videoUrl, bboxesVideoUrl, className = "", viewMode
             className={`absolute inset-0 w-full h-full ${viewMode === 'detections' ? 'block' : 'hidden'}`}
             onEnded={() => setIsPlaying(false)}
             preload="metadata"
+            playsInline
           />
         )}
       </div>

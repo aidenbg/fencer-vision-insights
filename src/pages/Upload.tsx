@@ -43,6 +43,7 @@ const Upload = () => {
     setUploadedVideo(videoUrl);
     setIsAnalyzing(true);
     setProgress(0);
+    setAnalysisError(null);
     
     try {
       // Ensure user is authenticated (anonymous)
@@ -51,11 +52,15 @@ const Upload = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Authentication failed');
 
+      // Extract filename from URL
+      const urlParts = videoUrl.split('/');
+      const filename = urlParts[urlParts.length - 1] || `video_${Date.now()}.mp4`;
+
       // Create video record in database with user ID
       const { data: videoRecord, error: insertError } = await supabase
         .from('videos')
         .insert({
-          filename: `video_${Date.now()}.mp4`,
+          filename,
           original_video_url: videoUrl,
           analysis_status: 'pending',
           user_id: user.id
@@ -127,6 +132,8 @@ const Upload = () => {
       // Set the detection video URL from the database
       if (videoData.detection_video_url) {
         setBboxesVideoUrl(videoData.detection_video_url);
+        // Auto-switch to detections view when analysis completes
+        setViewMode('detections');
       }
       
       // Complete the analysis
@@ -210,16 +217,30 @@ const Upload = () => {
                 <Card className="p-4 border-destructive lg:col-span-2">
                   <p className="text-sm font-medium text-destructive mb-2">Analysis Error</p>
                   <p className="text-xs text-muted-foreground mb-3">{analysisError}</p>
-                  <Button 
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setAnalysisError(null);
-                      setIsAnalyzing(false);
-                    }}
-                  >
-                    Dismiss
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setAnalysisError(null);
+                        setIsAnalyzing(false);
+                      }}
+                    >
+                      Dismiss
+                    </Button>
+                    <Button 
+                      variant="default"
+                      size="sm"
+                      onClick={() => {
+                        setAnalysisError(null);
+                        if (currentVideoId && uploadedVideo) {
+                          analyzeVideo(currentVideoId, uploadedVideo);
+                        }
+                      }}
+                    >
+                      Retry Analysis
+                    </Button>
+                  </div>
                 </Card>
               )}
               
