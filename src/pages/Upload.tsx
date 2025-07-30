@@ -109,14 +109,17 @@ const Upload = () => {
       setIsAnalyzing(false);
       setAnalysisComplete(true);
       
-      // Automatically download the detection video
+      // Automatically download the detection video with a slight delay
       if (videoData.detection_video_url) {
-        const link = document.createElement('a');
-        link.href = videoData.detection_video_url;
-        link.download = `analysis_${videoData.filename}`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        setTimeout(() => {
+          const link = document.createElement('a');
+          link.href = videoData.detection_video_url;
+          link.download = `analysis_${videoData.filename}`;
+          link.style.display = 'none'; // Ensure it's invisible
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }, 500); // Small delay to let the UI settle
       }
 
     } catch (error) {
