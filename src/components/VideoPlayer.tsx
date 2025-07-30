@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Play, Pause, RotateCcw, Volume2, VolumeX, Maximize, Minimize } from 'lucide-react';
+import { Play, Pause, RotateCcw, Volume2, VolumeX, Maximize, Minimize, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 
@@ -155,6 +155,32 @@ export const VideoPlayer = ({ videoUrl, bboxesVideoUrl, className = "", viewMode
     setIsFullscreen(!isFullscreen);
   };
 
+  const downloadCurrentVideo = async () => {
+    const currentUrl = viewMode === 'detections' && bboxesVideoUrl ? bboxesVideoUrl : videoUrl;
+    const fileName = `fencing_${viewMode}_video_${Date.now()}.mp4`;
+    
+    try {
+      // Create a temporary anchor element to trigger download
+      const link = document.createElement('a');
+      link.href = currentUrl;
+      link.download = fileName;
+      link.target = '_blank';
+      
+      // For mobile devices, try opening in new tab if download doesn't work
+      if (/Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+        window.open(currentUrl, '_blank');
+      } else {
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } catch (error) {
+      console.error('Download failed:', error);
+      // Fallback: open video in new tab
+      window.open(currentUrl, '_blank');
+    }
+  };
+
   const formatTime = (time: number) => {
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
@@ -267,6 +293,16 @@ export const VideoPlayer = ({ videoUrl, bboxesVideoUrl, className = "", viewMode
               ) : (
                 <Maximize className="h-4 w-4" />
               )}
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={downloadCurrentVideo}
+              className="h-8 w-8 p-0"
+              title={`Download ${viewMode} video`}
+            >
+              <Download className="h-4 w-4" />
             </Button>
           </div>
           

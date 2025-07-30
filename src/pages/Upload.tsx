@@ -18,12 +18,24 @@ const Upload = () => {
   const [viewMode, setViewMode] = useState<'original' | 'detections'>('original');
   const [bboxesVideoUrl, setBboxesVideoUrl] = useState<string | null>(null);
 
-  // Ensure anonymous authentication
+  // Ensure anonymous authentication with better error handling
   const ensureAuth = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      const { error } = await supabase.auth.signInAnonymously();
-      if (error) throw error;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.log('No user found, signing in anonymously...');
+        const { data, error } = await supabase.auth.signInAnonymously();
+        if (error) {
+          console.error('Anonymous sign in error:', error);
+          throw new Error(`Authentication failed: ${error.message}`);
+        }
+        console.log('Anonymous sign in successful:', data.user?.id);
+        // Wait a moment for the session to be established
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    } catch (error) {
+      console.error('Auth error:', error);
+      throw error;
     }
   };
 
@@ -49,9 +61,16 @@ const Upload = () => {
           user_id: user.id
         })
         .select()
-        .single();
+        .maybeSingle();
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error('Database insert error:', insertError);
+        throw new Error(`Database error: ${insertError.message}`);
+      }
+      
+      if (!videoRecord) {
+        throw new Error('Failed to create video record');
+      }
       
       setCurrentVideoId(videoRecord.id);
       
@@ -60,7 +79,8 @@ const Upload = () => {
     } catch (error) {
       console.error('Error uploading video:', error);
       setIsAnalyzing(false);
-      setAnalysisError(error.message || 'Failed to upload video');
+      const errorMessage = error.message || 'Failed to upload video';
+      setAnalysisError(`Upload failed: ${errorMessage}`);
     }
   };
 
@@ -77,7 +97,8 @@ const Upload = () => {
         });
       }, 800);
 
-      // Call AI analysis edge function
+      // Call AI analysis edge function with better error handling
+      console.log('Calling analyze-video edge function...');
       const { data, error } = await supabase.functions.invoke('analyze-video', {
         body: { 
           videoId, 
@@ -85,7 +106,10 @@ const Upload = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(`Analysis failed: ${error.message || 'Unknown edge function error'}`);
+      }
       
       // Analysis completed successfully
       clearInterval(interval);
@@ -139,15 +163,12 @@ const Upload = () => {
         {!uploadedVideo ? (
           <div className="space-y-8">
             <div className="text-center">
-              <h1 className="text-3xl font-bold mb-4">Fencing Video Analysis</h1>
-              <p className="text-muted-foreground mb-4">Upload your video to analyze fencing techniques and performance</p>
+              <h1 className="text-3xl font-bold mb-4">Upload Your Video</h1>
               <div className="bg-muted/50 p-4 rounded-lg mb-8 max-w-2xl mx-auto">
-                <h3 className="font-semibold mb-2">Video Requirements:</h3>
+                <h3 className="font-semibold mb-2">Requirements:</h3>
                 <ul className="text-sm text-muted-foreground text-left space-y-1">
-                  <li>• Side view angle where both fencers are clearly visible</li>
-                  <li>• Good lighting and stable camera position</li>
-                  <li>• Clear view of the action and scoring area</li>
-                  <li>• See demo video on home page for reference</li>
+                  <li>• Clear side view with both fencers visible</li>
+                  <li>• Good lighting and stable camera</li>
                 </ul>
               </div>
             </div>
@@ -162,9 +183,6 @@ const Upload = () => {
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-bold">Video Analysis</h2>
-                <div className="text-sm text-muted-foreground">
-                  Press <kbd className="px-2 py-1 bg-muted rounded text-xs">Space</kbd> to play/pause
-                </div>
               </div>
               
               <VideoPlayer 
