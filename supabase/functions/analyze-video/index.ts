@@ -63,7 +63,8 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        video_url: videoUrl
+        video_url: videoUrl,
+        return_method: 'direct'  // Request direct video return for efficiency
       })
     });
 
@@ -73,16 +74,14 @@ serve(async (req) => {
       throw new Error(`Model API returned ${modelResponse.status}: ${errorText}`);
     }
 
-    const modelResults = await modelResponse.json();
-    console.log('Model results received:', JSON.stringify(modelResults));
-
     let detectionVideoUrl = null;
 
-    // Check if Flask returned a video directly
-    if (modelResponse.headers.get('content-type')?.includes('video')) {
+    // Check if Flask returned a video directly (which it should with return_method: 'direct')
+    const contentType = modelResponse.headers.get('content-type');
+    if (contentType?.includes('video')) {
       console.log('Flask returned video directly, uploading to Supabase Storage...');
       
-      // Upload the video to Supabase Storage
+      // Upload the video blob to Supabase Storage
       const videoBlob = await modelResponse.blob();
       const fileName = `detections_${videoId}_${Date.now()}.mp4`;
       
@@ -104,12 +103,23 @@ serve(async (req) => {
       
       detectionVideoUrl = publicUrl;
       console.log(`Detection video uploaded to storage: ${detectionVideoUrl}`);
-    } else if (modelResults.video_id) {
-      // Flask returned a video ID, construct download URL
-      detectionVideoUrl = modelApiUrl.endsWith('/') 
-        ? `${modelApiUrl}download/${modelResults.video_id}` 
-        : `${modelApiUrl}/download/${modelResults.video_id}`;
-      console.log(`Detection video URL from Flask: ${detectionVideoUrl}`);
+    } else {
+      // Fallback: try to parse JSON response (backward compatibility)
+      try {
+        const modelResults = await modelResponse.json();
+        console.log('Model results received:', JSON.stringify(modelResults));
+        
+        if (modelResults.video_id) {
+          // Flask returned a video ID, construct download URL
+          detectionVideoUrl = modelApiUrl.endsWith('/') 
+            ? `${modelApiUrl}download/${modelResults.video_id}` 
+            : `${modelApiUrl}/download/${modelResults.video_id}`;
+          console.log(`Detection video URL from Flask: ${detectionVideoUrl}`);
+        }
+      } catch (parseError) {
+        console.error('Failed to parse JSON response:', parseError);
+        throw new Error('Unexpected response format from Flask API');
+      }
     }
 
 
