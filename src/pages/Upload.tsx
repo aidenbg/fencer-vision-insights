@@ -108,6 +108,16 @@ const Upload = () => {
       // Complete the analysis
       setIsAnalyzing(false);
       setAnalysisComplete(true);
+      
+      // Automatically download the detection video
+      if (videoData.detection_video_url) {
+        const link = document.createElement('a');
+        link.href = videoData.detection_video_url;
+        link.download = `analysis_${videoData.filename}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
 
     } catch (error) {
       console.error('Error analyzing video:', error);
@@ -140,14 +150,11 @@ const Upload = () => {
           <div className="space-y-8">
             <div className="text-center">
               <h1 className="text-3xl font-bold mb-4">Fencing Video Analysis</h1>
-              <p className="text-muted-foreground mb-4">Upload your video to analyze fencing techniques and performance</p>
               <div className="bg-muted/50 p-4 rounded-lg mb-8 max-w-2xl mx-auto">
                 <h3 className="font-semibold mb-2">Video Requirements:</h3>
                 <ul className="text-sm text-muted-foreground text-left space-y-1">
-                  <li>• Side view angle where both fencers are clearly visible</li>
-                  <li>• Good lighting and stable camera position</li>
-                  <li>• Clear view of the action and scoring area</li>
-                  <li>• See demo video on home page for reference</li>
+                  <li>• Side view with both fencers clearly visible in good lighting</li>
+                  <li>• Stable camera showing the action and scoring area</li>
                 </ul>
               </div>
             </div>
@@ -162,9 +169,6 @@ const Upload = () => {
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-bold">Video Analysis</h2>
-                <div className="text-sm text-muted-foreground">
-                  Press <kbd className="px-2 py-1 bg-muted rounded text-xs">Space</kbd> to play/pause
-                </div>
               </div>
               
               <VideoPlayer 
