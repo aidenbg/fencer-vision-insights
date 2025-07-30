@@ -11,8 +11,8 @@ const Index = () => {
   const [viewMode, setViewMode] = useState<'original' | 'detections'>('original');
   
   // Direct video URLs
-  const originalVideoUrl = "https://drive.google.com/file/d/1QcBM3y2PM5B7Q1j1FZ5-5txA66Kf_yPq/view?usp=sharing";
-  const detectionsVideoUrl = "https://drive.google.com/file/d/1KNSe0KoBwDSSZKxtlSwVTlUdvIfAo3Ma/view?usp=sharing";
+  const originalVideoUrl = demoVideo;
+  const detectionsVideoUrl = demoDetectionsVideo;
 
   return (
     <div className="min-h-screen bg-background">
