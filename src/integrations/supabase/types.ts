@@ -16,9 +16,7 @@ export type Database = {
     Tables: {
       videos: {
         Row: {
-          analysis_status: string
           created_at: string
-          detection_video_url: string | null
           filename: string
           id: string
           original_video_url: string
@@ -27,9 +25,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
-          analysis_status?: string
           created_at?: string
-          detection_video_url?: string | null
           filename: string
           id?: string
           original_video_url: string
@@ -38,9 +34,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
-          analysis_status?: string
           created_at?: string
-          detection_video_url?: string | null
           filename?: string
           id?: string
           original_video_url?: string
