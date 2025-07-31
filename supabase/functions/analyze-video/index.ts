@@ -53,6 +53,11 @@ serve(async (req) => {
       throw new Error('Invalid video URL. Please upload video to storage first.');
     }
     
+    // Additional validation for Supabase URLs
+    if (!videoUrl.includes('supabase.co') && !videoUrl.startsWith('http')) {
+      throw new Error('Invalid video URL format. Expected Supabase storage URL.');
+    }
+    
     // Call your Python YOLOv5 API - use the correct /analyze endpoint
     const apiUrl = modelApiUrl.endsWith('/') ? `${modelApiUrl}analyze` : `${modelApiUrl}/analyze`;
     console.log(`Making request to: ${apiUrl}`);
