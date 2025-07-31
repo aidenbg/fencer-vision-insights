@@ -19,29 +19,7 @@ interface VideoUploadProps {
 
 export function VideoUpload({ onUpload }: VideoUploadProps = {}) {
   const [files, setFiles] = useState<UploadedFile[]>([]);
-  const [isDragOver, setIsDragOver] = useState(false);
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(true);
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-  }, []);
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    
-    const droppedFiles = Array.from(e.dataTransfer.files);
-    const videoFiles = droppedFiles.filter(file => file.type.startsWith('video/'));
-    
-    if (videoFiles.length > 0) {
-      handleFiles(videoFiles);
-    }
-  }, []);
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
@@ -159,25 +137,15 @@ export function VideoUpload({ onUpload }: VideoUploadProps = {}) {
 
   return (
     <div className="space-y-6">
-      <Card 
-        className={cn(
-          "relative border-2 border-dashed transition-all duration-300",
-          isDragOver 
-            ? "border-primary bg-primary/5 scale-105" 
-            : "border-muted-foreground/25 hover:border-primary/50"
-        )}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
+      <Card className="border-2 border-dashed border-muted-foreground/25 hover:border-primary/50 transition-all duration-300">
         <div className="p-8 text-center">
           <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-r from-primary/10 to-secondary/10 mb-4">
             <Video className="h-10 w-10 text-primary" />
           </div>
           
-          <h3 className="text-lg font-semibold mb-2">Upload Fencing Videos</h3>
+          <h3 className="text-lg font-semibold mb-2">Upload Videos</h3>
           <p className="text-muted-foreground mb-4">
-            Drag and drop your fencing videos here, or click to browse
+            Click to browse and upload your videos
           </p>
           
           <div className="space-y-2">
