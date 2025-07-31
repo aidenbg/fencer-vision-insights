@@ -20,7 +20,6 @@ export type Database = {
           filename: string
           id: string
           original_video_url: string
-          session_id: string | null
           updated_at: string
           user_id: string | null
         }
@@ -29,7 +28,6 @@ export type Database = {
           filename: string
           id?: string
           original_video_url: string
-          session_id?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -38,7 +36,6 @@ export type Database = {
           filename?: string
           id?: string
           original_video_url?: string
-          session_id?: string | null
           updated_at?: string
           user_id?: string | null
         }

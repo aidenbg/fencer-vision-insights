@@ -65,7 +65,7 @@ export function VideoUpload({ onUpload }: VideoUploadProps = {}) {
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
-    const fileName = `${Date.now()}_${file.name}`;
+    const fileName = `original/${Date.now()}_${file.name}`;
     
     // Simulate progress during upload
     let progress = 0;
@@ -79,15 +79,29 @@ export function VideoUpload({ onUpload }: VideoUploadProps = {}) {
 
     try {
       const { data, error } = await supabase.storage
-        .from('demo-videos')
+        .from('videos')
         .upload(fileName, file);
 
       if (error) throw error;
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
-        .from('demo-videos')
+        .from('videos')
         .getPublicUrl(fileName);
+
+      // Insert video record into database
+      const { error: dbError } = await supabase
+        .from('videos')
+        .insert({
+          filename: file.name,
+          original_video_url: publicUrl,
+          user_id: user.id
+        });
+
+      if (dbError) {
+        console.error('Database insert error:', dbError);
+        // Continue anyway - file is uploaded successfully
+      }
 
       clearInterval(progressInterval);
       
@@ -137,38 +151,36 @@ export function VideoUpload({ onUpload }: VideoUploadProps = {}) {
 
   return (
     <div className="space-y-6">
-      <Card className="border-2 border-dashed border-muted-foreground/25 hover:border-primary/50 transition-all duration-300">
-        <div className="p-8 text-center">
-          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-r from-primary/10 to-secondary/10 mb-4">
-            <Video className="h-10 w-10 text-primary" />
-          </div>
-          
-          <h3 className="text-lg font-semibold mb-2">Upload Videos</h3>
-          <p className="text-muted-foreground mb-4">
-            Click to browse and upload your videos
-          </p>
-          
-          <div className="space-y-2">
-              <Button variant="hero" size="lg" onClick={() => document.getElementById('file-input')?.click()}>
-                <Upload className="mr-2 h-4 w-4" />
-                Choose Videos
-              </Button>
-              
-              <input
-                id="file-input"
-                type="file"
-                multiple
-                accept="video/*"
-                className="hidden"
-                onChange={handleFileInput}
-              />
-              
-              <p className="text-xs text-muted-foreground">
-                Supports MP4, MOV, AVI up to 100MB each. Smaller videos work better.
-              </p>
-          </div>
+      <div className="text-center space-y-4">
+        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-r from-primary/10 to-secondary/10 mb-4">
+          <Video className="h-10 w-10 text-primary" />
         </div>
-      </Card>
+        
+        <h3 className="text-lg font-semibold">Upload Videos</h3>
+        <p className="text-muted-foreground">
+          Click to browse and upload your videos
+        </p>
+        
+        <div className="space-y-2">
+          <Button variant="hero" size="lg" onClick={() => document.getElementById('file-input')?.click()}>
+            <Upload className="mr-2 h-4 w-4" />
+            Choose Videos
+          </Button>
+          
+          <input
+            id="file-input"
+            type="file"
+            multiple
+            accept="video/*"
+            className="hidden"
+            onChange={handleFileInput}
+          />
+          
+          <p className="text-xs text-muted-foreground">
+            Supports MP4, MOV, AVI up to 100MB each. Smaller videos work better.
+          </p>
+        </div>
+      </div>
 
       {files.length > 0 && (
         <div className="space-y-3">
