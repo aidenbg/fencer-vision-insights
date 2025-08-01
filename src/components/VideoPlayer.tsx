@@ -25,12 +25,12 @@ export const VideoPlayer = ({ videoUrl, detectionsVideoUrl, poseVideoUrl, allVid
   const getCurrentVideoUrl = () => {
     if (showDetections && showPoses && allVideoUrl) {
       return allVideoUrl;
-    } else if (showDetections && detectionsVideoUrl) {
+    } else if (showDetections && !showPoses && detectionsVideoUrl) {
       return detectionsVideoUrl;
-    } else if (showPoses && poseVideoUrl) {
+    } else if (!showDetections && showPoses && poseVideoUrl) {
       return poseVideoUrl;
     }
-    return videoUrl;
+    return videoUrl; // Original video when both are off
   };
 
   useEffect(() => {

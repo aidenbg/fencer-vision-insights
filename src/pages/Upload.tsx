@@ -1,15 +1,33 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { VideoUpload } from '@/components/VideoUpload';
 import { VideoPlayer } from '@/components/VideoPlayer';
 import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+
+interface VideoData {
+  id: string;
+  original_video_url: string;
+  detections_video_url?: string | null;
+  pose_video_url?: string | null;
+  all_video_url?: string | null;
+}
 
 const Upload = () => {
-  const [uploadedVideo, setUploadedVideo] = useState<string | null>(null);
+  const [uploadedVideo, setUploadedVideo] = useState<VideoData | null>(null);
 
-  const handleVideoUpload = (videoUrl: string) => {
-    setUploadedVideo(videoUrl);
+  const handleVideoUpload = async (videoUrl: string) => {
+    // Find the video record in the database
+    const { data, error } = await supabase
+      .from('videos')
+      .select('*')
+      .eq('original_video_url', videoUrl)
+      .single();
+    
+    if (data && !error) {
+      setUploadedVideo(data);
+    }
   };
 
 
@@ -58,7 +76,10 @@ const Upload = () => {
             </div>
             
             <VideoPlayer 
-              videoUrl={uploadedVideo}
+              videoUrl={uploadedVideo.original_video_url}
+              detectionsVideoUrl={uploadedVideo.detections_video_url}
+              poseVideoUrl={uploadedVideo.pose_video_url}
+              allVideoUrl={uploadedVideo.all_video_url}
               className="max-w-none"
             />
           </div>
