@@ -1,7 +1,8 @@
 import { useState, useCallback } from 'react';
-import { Upload, Video, FileX, CheckCircle } from 'lucide-react';
+import { Upload, Video, FileX, CheckCircle, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -11,6 +12,7 @@ interface UploadedFile {
   size: number;
   status: 'uploading' | 'uploaded' | 'processing' | 'completed' | 'error';
   progress: number;
+  videoId?: string;
 }
 
 interface VideoUploadProps {
@@ -90,26 +92,33 @@ export function VideoUpload({ onUpload }: VideoUploadProps = {}) {
         .getPublicUrl(fileName);
 
       // Insert video record into database
-      const { error: dbError } = await supabase
+      const { data: videoData, error: dbError } = await supabase
         .from('videos')
         .insert({
           filename: file.name,
           original_video_url: publicUrl,
           user_id: user.id
-        });
+        })
+        .select()
+        .single();
 
       if (dbError) {
         console.error('Database insert error:', dbError);
-        // Continue anyway - file is uploaded successfully
+        throw dbError;
       }
 
       clearInterval(progressInterval);
       
       setFiles(prev => prev.map(f => 
         f.id === fileId 
-          ? { ...f, status: 'uploaded', progress: 100 }
+          ? { ...f, status: 'uploaded', progress: 100, videoId: videoData.id }
           : f
       ));
+
+      // Start AI processing
+      setTimeout(() => {
+        processVideo(fileId, publicUrl, videoData.id);
+      }, 500);
 
       // Call onUpload callback with Supabase URL
       setTimeout(() => {
@@ -121,6 +130,62 @@ export function VideoUpload({ onUpload }: VideoUploadProps = {}) {
     } catch (error) {
       clearInterval(progressInterval);
       throw error;
+    }
+  };
+
+  const processVideo = async (fileId: string, videoUrl: string, videoId: string) => {
+    try {
+      // Update status to processing
+      setFiles(prev => prev.map(f => 
+        f.id === fileId 
+          ? { ...f, status: 'processing', progress: 0 }
+          : f
+      ));
+
+      // Simulate processing progress
+      let progress = 0;
+      const progressInterval = setInterval(() => {
+        progress += Math.random() * 3 + 1; // Slower progress for AI processing
+        if (progress > 90) progress = 90;
+        setFiles(prev => prev.map(f => 
+          f.id === fileId ? { ...f, progress } : f
+        ));
+      }, 1000);
+
+      // Call the edge function
+      const { data, error } = await supabase.functions.invoke('process-video', {
+        body: {
+          video_url: videoUrl,
+          video_id: videoId
+        }
+      });
+
+      clearInterval(progressInterval);
+
+      if (error) {
+        console.error('Processing error:', error);
+        setFiles(prev => prev.map(f => 
+          f.id === fileId 
+            ? { ...f, status: 'error', progress: 0 }
+            : f
+        ));
+        return;
+      }
+
+      // Update status to completed
+      setFiles(prev => prev.map(f => 
+        f.id === fileId 
+          ? { ...f, status: 'completed', progress: 100 }
+          : f
+      ));
+
+    } catch (error) {
+      console.error('Processing failed:', error);
+      setFiles(prev => prev.map(f => 
+        f.id === fileId 
+          ? { ...f, status: 'error', progress: 0 }
+          : f
+      ));
     }
   };
 
@@ -139,7 +204,7 @@ export function VideoUpload({ onUpload }: VideoUploadProps = {}) {
       case 'uploaded':
         return <CheckCircle className="h-4 w-4 text-success" />;
       case 'processing':
-        return <Video className="h-4 w-4 animate-spin text-warning" />;
+        return <Brain className="h-4 w-4 animate-pulse text-warning" />;
       case 'completed':
         return <CheckCircle className="h-4 w-4 text-success" />;
       case 'error':
@@ -202,16 +267,11 @@ export function VideoUpload({ onUpload }: VideoUploadProps = {}) {
                   </div>
                 </div>
                 
-                {file.status === 'uploading' && (
+                {(file.status === 'uploading' || file.status === 'processing') && (
                   <div className="w-32">
-                    <div className="bg-muted rounded-full h-2">
-                      <div 
-                        className="bg-gradient-to-r from-primary to-secondary h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${file.progress}%` }}
-                      />
-                    </div>
+                    <Progress value={file.progress} className="h-2" />
                     <p className="text-xs text-muted-foreground mt-1 text-center">
-                      {Math.round(file.progress)}%
+                      {file.status === 'processing' ? 'Analyzing' : 'Uploading'} {Math.round(file.progress)}%
                     </p>
                   </div>
                 )}
