@@ -151,34 +151,38 @@ export function VideoUpload({ onUpload }: VideoUploadProps = {}) {
 
   return (
     <div className="space-y-6">
-      <div className="text-center space-y-4">
-        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-r from-primary/10 to-secondary/10 mb-4">
-          <Video className="h-10 w-10 text-primary" />
+      <div className="text-center space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold mb-2">Upload Your Fencing Video</h2>
+          <p className="text-muted-foreground max-w-md mx-auto">
+            Upload your fencing videos for AI-powered analysis. Get automatic detection of fencers, weapons, and pose estimation to improve your technique.
+          </p>
         </div>
         
-        <h3 className="text-lg font-semibold">Upload Videos</h3>
-        <p className="text-muted-foreground">
-          Click to browse and upload your videos
-        </p>
-        
-        <div className="space-y-2">
+        <div className="space-y-4">
           <Button variant="hero" size="lg" onClick={() => document.getElementById('file-input')?.click()}>
             <Upload className="mr-2 h-4 w-4" />
-            Choose Videos
+            Choose Video
           </Button>
           
           <input
             id="file-input"
             type="file"
-            multiple
             accept="video/*"
             className="hidden"
             onChange={handleFileInput}
           />
           
-          <p className="text-xs text-muted-foreground">
-            Supports MP4, MOV, AVI up to 100MB each. Smaller videos work better.
-          </p>
+          <div className="text-sm text-muted-foreground space-y-2">
+            <p className="font-medium">Requirements:</p>
+            <ul className="text-xs space-y-1">
+              <li>• MP4, MOV, or AVI format</li>
+              <li>• Maximum file size: 100MB</li>
+              <li>• Clear view of fencers and weapons</li>
+              <li>• Good lighting and resolution</li>
+              <li>• Videos under 60 seconds process faster</li>
+            </ul>
+          </div>
         </div>
       </div>
 

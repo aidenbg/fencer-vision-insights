@@ -59,8 +59,6 @@ const Upload = () => {
             
             <VideoPlayer 
               videoUrl={uploadedVideo}
-              bboxesVideoUrl={null}
-              viewMode="original"
               className="max-w-none"
             />
           </div>

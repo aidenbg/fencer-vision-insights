@@ -5,55 +5,36 @@ import { Slider } from '@/components/ui/slider';
 
 interface VideoPlayerProps {
   videoUrl: string;
-  bboxesVideoUrl?: string | null;
+  detectionsVideoUrl?: string | null;
+  poseVideoUrl?: string | null;
+  allVideoUrl?: string | null;
   className?: string;
-  viewMode?: 'original' | 'detections';
-  onViewModeChange?: (mode: 'original' | 'detections') => void;
 }
 
-export const VideoPlayer = ({ videoUrl, bboxesVideoUrl, className = "", viewMode = 'original', onViewModeChange }: VideoPlayerProps) => {
+export const VideoPlayer = ({ videoUrl, detectionsVideoUrl, poseVideoUrl, allVideoUrl, className = "" }: VideoPlayerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const detectionsVideoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showDetections, setShowDetections] = useState(false);
+  const [showPoses, setShowPoses] = useState(false);
 
-  // Get the currently active video element
-  const getCurrentVideo = () => {
-    return viewMode === 'detections' && bboxesVideoUrl && detectionsVideoRef.current 
-      ? detectionsVideoRef.current 
-      : videoRef.current;
+  // Get the current video URL based on toggle states
+  const getCurrentVideoUrl = () => {
+    if (showDetections && showPoses && allVideoUrl) {
+      return allVideoUrl;
+    } else if (showDetections && detectionsVideoUrl) {
+      return detectionsVideoUrl;
+    } else if (showPoses && poseVideoUrl) {
+      return poseVideoUrl;
+    }
+    return videoUrl;
   };
 
-
-  // Sync videos when switching modes
   useEffect(() => {
-    const originalVideo = videoRef.current;
-    const detectionsVideo = detectionsVideoRef.current;
-    
-    if (originalVideo && detectionsVideo && bboxesVideoUrl) {
-      if (viewMode === 'detections') {
-        // Sync detections video to original video time
-        detectionsVideo.currentTime = originalVideo.currentTime;
-        detectionsVideo.muted = originalVideo.muted;
-        if (!originalVideo.paused) {
-          detectionsVideo.play();
-        }
-      } else {
-        // Sync original video to detections video time  
-        originalVideo.currentTime = detectionsVideo.currentTime;
-        originalVideo.muted = detectionsVideo.muted;
-        if (!detectionsVideo.paused) {
-          originalVideo.play();
-        }
-      }
-    }
-  }, [viewMode, bboxesVideoUrl]);
-
-  useEffect(() => {
-    const video = getCurrentVideo();
+    const video = videoRef.current;
     if (!video) return;
 
     const updateTime = () => setCurrentTime(video.currentTime);
@@ -66,7 +47,7 @@ export const VideoPlayer = ({ videoUrl, bboxesVideoUrl, className = "", viewMode
       video.removeEventListener('timeupdate', updateTime);
       video.removeEventListener('loadedmetadata', updateDuration);
     };
-  }, [viewMode, bboxesVideoUrl]);
+  }, []);
 
   // Space key functionality
   useEffect(() => {
@@ -82,14 +63,11 @@ export const VideoPlayer = ({ videoUrl, bboxesVideoUrl, className = "", viewMode
   }, [isPlaying]);
 
   const togglePlay = () => {
-    const video = getCurrentVideo();
+    const video = videoRef.current;
     if (!video) return;
 
     if (isPlaying) {
       video.pause();
-      // Pause the other video too
-      const otherVideo = viewMode === 'detections' ? videoRef.current : detectionsVideoRef.current;
-      if (otherVideo) otherVideo.pause();
     } else {
       video.play();
     }
@@ -97,50 +75,32 @@ export const VideoPlayer = ({ videoUrl, bboxesVideoUrl, className = "", viewMode
   };
 
   const handleSeek = (value: number[]) => {
-    const video = getCurrentVideo();
+    const video = videoRef.current;
     if (!video) return;
     
     const time = value[0];
     video.currentTime = time;
     setCurrentTime(time);
-    
-    // Sync the other video too
-    const otherVideo = viewMode === 'detections' ? videoRef.current : detectionsVideoRef.current;
-    if (otherVideo) {
-      otherVideo.currentTime = time;
-    }
   };
 
   const restart = () => {
-    const video = getCurrentVideo();
+    const video = videoRef.current;
     if (!video) return;
     
     video.currentTime = 0;
     setCurrentTime(0);
-    
-    // Restart the other video too
-    const otherVideo = viewMode === 'detections' ? videoRef.current : detectionsVideoRef.current;
-    if (otherVideo) {
-      otherVideo.currentTime = 0;
-    }
   };
 
   const toggleMute = () => {
-    const video = getCurrentVideo();
+    const video = videoRef.current;
     if (!video) return;
     
     video.muted = !video.muted;
     setIsMuted(video.muted);
-    
-    // Sync the other video too
-    const otherVideo = viewMode === 'detections' ? videoRef.current : detectionsVideoRef.current;
-    if (otherVideo) {
-      otherVideo.muted = video.muted;
-    }
   };
 
   const toggleFullscreen = () => {
-    const video = getCurrentVideo();
+    const video = videoRef.current;
     if (!video) return;
 
     if (!isFullscreen) {
@@ -156,8 +116,13 @@ export const VideoPlayer = ({ videoUrl, bboxesVideoUrl, className = "", viewMode
   };
 
   const downloadCurrentVideo = async () => {
-    const currentUrl = viewMode === 'detections' && bboxesVideoUrl ? bboxesVideoUrl : videoUrl;
-    const fileName = `fencing_${viewMode}_video_${Date.now()}.mp4`;
+    const currentUrl = getCurrentVideoUrl();
+    const getFileName = () => {
+      if (showDetections && showPoses) return `fencing_all_video_${Date.now()}.mp4`;
+      if (showDetections) return `fencing_detections_video_${Date.now()}.mp4`;
+      if (showPoses) return `fencing_poses_video_${Date.now()}.mp4`;
+      return `fencing_original_video_${Date.now()}.mp4`;
+    };
     
     try {
       const response = await fetch(currentUrl);
@@ -166,7 +131,7 @@ export const VideoPlayer = ({ videoUrl, bboxesVideoUrl, className = "", viewMode
       
       const link = document.createElement('a');
       link.href = url;
-      link.download = fileName;
+      link.download = getFileName();
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -188,52 +153,38 @@ export const VideoPlayer = ({ videoUrl, bboxesVideoUrl, className = "", viewMode
 
   return (
     <div className={`bg-card rounded-lg overflow-hidden ${className}`}>
-      {/* View Mode Selector */}
-      {onViewModeChange && (
-        <div className="p-4 border-b">
-          <div className="flex gap-2">
-            <Button 
-              variant={viewMode === 'original' ? 'default' : 'outline'} 
-              size="sm"
-              onClick={() => onViewModeChange('original')}
-            >
-              Original
-            </Button>
-            <Button 
-              variant={viewMode === 'detections' ? 'default' : 'outline'} 
-              size="sm"
-              onClick={() => onViewModeChange('detections')}
-              disabled={!bboxesVideoUrl}
-            >
-              Detections
-            </Button>
-          </div>
+      {/* AI Toggle Controls */}
+      <div className="p-4 border-b">
+        <div className="flex gap-2">
+          <Button 
+            variant={showDetections ? 'default' : 'outline'} 
+            size="sm"
+            onClick={() => setShowDetections(!showDetections)}
+            disabled={!detectionsVideoUrl}
+          >
+            +Detections
+          </Button>
+          <Button 
+            variant={showPoses ? 'default' : 'outline'} 
+            size="sm"
+            onClick={() => setShowPoses(!showPoses)}
+            disabled={!poseVideoUrl}
+          >
+            +Poses
+          </Button>
         </div>
-      )}
+      </div>
       
       {/* Video Container */}
       <div className="relative w-full aspect-video bg-muted">
-        {/* Original Video */}
         <video
           ref={videoRef}
-          src={videoUrl}
-          className={`absolute inset-0 w-full h-full ${viewMode === 'original' ? 'block' : 'hidden'}`}
+          src={getCurrentVideoUrl()}
+          className="absolute inset-0 w-full h-full"
           onEnded={() => setIsPlaying(false)}
           preload="metadata"
           playsInline
         />
-        
-        {/* Detections Video */}
-        {bboxesVideoUrl && (
-          <video
-            ref={detectionsVideoRef}
-            src={bboxesVideoUrl}
-            className={`absolute inset-0 w-full h-full ${viewMode === 'detections' ? 'block' : 'hidden'}`}
-            onEnded={() => setIsPlaying(false)}
-            preload="metadata"
-            playsInline
-          />
-        )}
       </div>
       
       <div className="p-4 space-y-3">
@@ -302,7 +253,7 @@ export const VideoPlayer = ({ videoUrl, bboxesVideoUrl, className = "", viewMode
               size="sm"
               onClick={downloadCurrentVideo}
               className="h-8 w-8 p-0"
-              title={`Download ${viewMode} video`}
+              title="Download current video"
             >
               <Download className="h-4 w-4" />
             </Button>

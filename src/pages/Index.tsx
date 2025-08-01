@@ -8,7 +8,7 @@ import demoVideo from '@/assets/demo-fencing-video.mp4';
 import demoDetectionsVideo from '@/assets/demo-fencing-detections.mp4';
 
 const Index = () => {
-  const [viewMode, setViewMode] = useState<'original' | 'detections'>('original');
+  
   
   // Direct video URLs
   const originalVideoUrl = demoVideo;
@@ -65,9 +65,7 @@ const Index = () => {
                 <div className="w-full">
                   <VideoPlayer
                     videoUrl={originalVideoUrl}
-                    bboxesVideoUrl={detectionsVideoUrl}
-                    viewMode={viewMode}
-                    onViewModeChange={setViewMode}
+                    detectionsVideoUrl={detectionsVideoUrl}
                     className="w-full"
                   />
                 </div>
