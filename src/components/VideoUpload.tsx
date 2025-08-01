@@ -69,15 +69,6 @@ export function VideoUpload({ onUpload }: VideoUploadProps = {}) {
 
     const fileName = `original/${Date.now()}_${file.name}`;
     
-    // Simulate progress during upload
-    let progress = 0;
-    const progressInterval = setInterval(() => {
-      progress += Math.random() * 20;
-      if (progress > 90) progress = 90;
-      setFiles(prev => prev.map(f => 
-        f.id === fileId ? { ...f, progress } : f
-      ));
-    }, 200);
 
     try {
       const { data, error } = await supabase.storage
@@ -107,8 +98,6 @@ export function VideoUpload({ onUpload }: VideoUploadProps = {}) {
         throw dbError;
       }
 
-      clearInterval(progressInterval);
-      
       setFiles(prev => prev.map(f => 
         f.id === fileId 
           ? { ...f, status: 'uploaded', progress: 100, videoId: videoData.id }
@@ -128,7 +117,6 @@ export function VideoUpload({ onUpload }: VideoUploadProps = {}) {
       }, 100);
 
     } catch (error) {
-      clearInterval(progressInterval);
       throw error;
     }
   };

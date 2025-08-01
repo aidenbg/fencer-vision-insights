@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Play, Pause, RotateCcw, Volume2, VolumeX, Maximize, Minimize, Download } from 'lucide-react';
+import { Play, Pause, RotateCcw, Volume2, VolumeX, Maximize, Minimize } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 
@@ -115,35 +115,6 @@ export const VideoPlayer = ({ videoUrl, detectionsVideoUrl, poseVideoUrl, allVid
     setIsFullscreen(!isFullscreen);
   };
 
-  const downloadCurrentVideo = async () => {
-    const currentUrl = getCurrentVideoUrl();
-    const getFileName = () => {
-      if (showDetections && showPoses) return `fencing_all_video_${Date.now()}.mp4`;
-      if (showDetections) return `fencing_detections_video_${Date.now()}.mp4`;
-      if (showPoses) return `fencing_poses_video_${Date.now()}.mp4`;
-      return `fencing_original_video_${Date.now()}.mp4`;
-    };
-    
-    try {
-      const response = await fetch(currentUrl);
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = getFileName();
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      // Clean up the object URL
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Download failed:', error);
-      // Fallback: open video in new tab
-      window.open(currentUrl, '_blank');
-    }
-  };
 
   const formatTime = (time: number) => {
     const minutes = Math.floor(time / 60);
@@ -248,15 +219,6 @@ export const VideoPlayer = ({ videoUrl, detectionsVideoUrl, poseVideoUrl, allVid
               )}
             </Button>
             
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={downloadCurrentVideo}
-              className="h-8 w-8 p-0"
-              title="Download current video"
-            >
-              <Download className="h-4 w-4" />
-            </Button>
           </div>
           
           <div className="text-sm text-muted-foreground">
