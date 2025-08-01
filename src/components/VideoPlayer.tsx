@@ -133,7 +133,7 @@ export const VideoPlayer = ({ videoUrl, detectionsVideoUrl, poseVideoUrl, allVid
             onClick={() => setShowDetections(!showDetections)}
             disabled={!detectionsVideoUrl}
           >
-            +Detections
+            {showDetections ? '−' : '+'} Detections
           </Button>
           <Button 
             variant={showPoses ? 'default' : 'outline'} 
@@ -141,7 +141,7 @@ export const VideoPlayer = ({ videoUrl, detectionsVideoUrl, poseVideoUrl, allVid
             onClick={() => setShowPoses(!showPoses)}
             disabled={!poseVideoUrl}
           >
-            +Poses
+            {showPoses ? '−' : '+'} Poses
           </Button>
         </div>
       </div>
