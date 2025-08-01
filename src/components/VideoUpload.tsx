@@ -126,20 +126,10 @@ export function VideoUpload({ onUpload }: VideoUploadProps = {}) {
       // Update status to processing
       setFiles(prev => prev.map(f => 
         f.id === fileId 
-          ? { ...f, status: 'processing', progress: 0 }
+          ? { ...f, status: 'processing', progress: 10 }
           : f
       ));
-
-      // Simulate processing progress
-      let progress = 0;
-      const progressInterval = setInterval(() => {
-        progress += Math.random() * 3 + 1; // Slower progress for AI processing
-        if (progress > 90) progress = 90;
-        setFiles(prev => prev.map(f => 
-          f.id === fileId ? { ...f, progress } : f
-        ));
-      }, 1000);
-
+      
       // Call the edge function
       const { data, error } = await supabase.functions.invoke('process-video', {
         body: {
@@ -147,9 +137,7 @@ export function VideoUpload({ onUpload }: VideoUploadProps = {}) {
           video_id: videoId
         }
       });
-
-      clearInterval(progressInterval);
-
+      
       if (error) {
         console.error('Processing error:', error);
         setFiles(prev => prev.map(f => 
@@ -160,12 +148,45 @@ export function VideoUpload({ onUpload }: VideoUploadProps = {}) {
         return;
       }
 
-      // Update status to completed
-      setFiles(prev => prev.map(f => 
-        f.id === fileId 
-          ? { ...f, status: 'completed', progress: 100 }
-          : f
-      ));
+      // Poll for completion
+      let attempts = 0;
+      const maxAttempts = 60; // 2 minutes max
+  
+      const pollInterval = setInterval(async () => {
+        attempts++;
+
+        // Update progress based on time elapsed
+        const progress = Math.min(10 + (attempts / maxAttempts) * 80, 90);
+        setFiles(prev => prev.map(f => 
+          f.id === fileId ? { ...f, progress } : f
+        ));
+
+        // Check if processing is complete
+        const { data: video } = await supabase
+          .from('videos')
+          .select('detections_video_url, pose_video_url, all_video_url')
+          .eq('id', videoId)
+          .single();
+
+        if (video?.detections_video_url && video?.pose_video_url && video?.all_video_url) {
+          clearInterval(pollInterval);
+          setFiles(prev => prev.map(f => 
+            f.id === fileId 
+              ? { ...f, status: 'completed', progress: 100 }
+              : f
+          ));
+          return;
+        }
+
+        if (attempts >= maxAttempts) {
+          clearInterval(pollInterval);
+          setFiles(prev => prev.map(f => 
+            f.id === fileId 
+              ? { ...f, status: 'error', progress: 0 }
+              : f
+          ));
+        }
+      }, 2000); // Check every 2 seconds
 
     } catch (error) {
       console.error('Processing failed:', error);
@@ -176,7 +197,7 @@ export function VideoUpload({ onUpload }: VideoUploadProps = {}) {
       ));
     }
   };
-
+  
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
