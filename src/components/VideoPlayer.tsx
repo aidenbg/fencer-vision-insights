@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Play, Pause, RotateCcw, Volume2, VolumeX, Maximize, Minimize } from 'lucide-react';
+import { Play, Pause, RotateCcw, Volume2, VolumeX, Maximize, Minimize, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 
@@ -115,6 +115,30 @@ export const VideoPlayer = ({ videoUrl, detectionsVideoUrl, poseVideoUrl, allVid
     setIsFullscreen(!isFullscreen);
   };
 
+  const downloadVideo = async (url: string, filename: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error('Error downloading video:', error);
+    }
+  };
+
+  const handleDownloadAll = () => {
+    if (videoUrl) downloadVideo(videoUrl, 'original-video.mp4');
+    if (detectionsVideoUrl) downloadVideo(detectionsVideoUrl, 'detections-video.mp4');
+    if (poseVideoUrl) downloadVideo(poseVideoUrl, 'pose-video.mp4');
+    if (allVideoUrl) downloadVideo(allVideoUrl, 'all-analysis-video.mp4');
+  };
+
 
   const formatTime = (time: number) => {
     const minutes = Math.floor(time / 60);
@@ -126,22 +150,33 @@ export const VideoPlayer = ({ videoUrl, detectionsVideoUrl, poseVideoUrl, allVid
     <div className={`bg-card rounded-lg overflow-hidden ${className}`}>
       {/* AI Toggle Controls */}
       <div className="p-4 border-b">
-        <div className="flex gap-2">
+        <div className="flex items-center justify-between">
+          <div className="flex gap-2">
+            <Button 
+              variant={showDetections ? 'default' : 'outline'} 
+              size="sm"
+              onClick={() => setShowDetections(!showDetections)}
+              disabled={!detectionsVideoUrl}
+            >
+              {showDetections ? '−' : '+'} Detections
+            </Button>
+            <Button 
+              variant={showPoses ? 'default' : 'outline'} 
+              size="sm"
+              onClick={() => setShowPoses(!showPoses)}
+              disabled={!poseVideoUrl}
+            >
+              {showPoses ? '−' : '+'} Poses
+            </Button>
+          </div>
           <Button 
-            variant={showDetections ? 'default' : 'outline'} 
+            variant="outline" 
             size="sm"
-            onClick={() => setShowDetections(!showDetections)}
-            disabled={!detectionsVideoUrl}
+            onClick={handleDownloadAll}
+            className="gap-2"
           >
-            {showDetections ? '−' : '+'} Detections
-          </Button>
-          <Button 
-            variant={showPoses ? 'default' : 'outline'} 
-            size="sm"
-            onClick={() => setShowPoses(!showPoses)}
-            disabled={!poseVideoUrl}
-          >
-            {showPoses ? '−' : '+'} Poses
+            <Download className="h-4 w-4" />
+            Download All Videos
           </Button>
         </div>
       </div>
