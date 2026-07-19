@@ -3,16 +3,10 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
 import { VideoPlayer } from '@/components/VideoPlayer';
-import { useState } from 'react';
-import demoVideo from '@/assets/demo-fencing-video.mp4';
 import demoDetectionsVideo from '@/assets/demo-fencing-detections.mp4';
 
 const Index = () => {
-  
-  
-  // Direct video URLs
-  const originalVideoUrl = demoVideo;
-  const detectionsVideoUrl = demoDetectionsVideo;
+  const annotatedVideoUrl = demoDetectionsVideo;
 
   return (
     <div className="min-h-screen bg-background">
@@ -64,8 +58,7 @@ const Index = () => {
                 {/* Demo Video - Full Width */}
                 <div className="w-full">
                   <VideoPlayer
-                    videoUrl={originalVideoUrl}
-                    detectionsVideoUrl={detectionsVideoUrl}
+                    videoUrl={annotatedVideoUrl}
                     className="w-full"
                   />
                 </div>
