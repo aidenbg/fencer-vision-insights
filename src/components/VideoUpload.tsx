@@ -1,294 +1,153 @@
-import { useState, useCallback } from 'react';
-import { Upload, Video, FileX, CheckCircle, Brain } from 'lucide-react';
+import { useState } from 'react';
+import { Upload, FileX, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-
-interface UploadedFile {
-  id: string;
-  name: string;
-  size: number;
-  status: 'uploading' | 'uploaded' | 'processing' | 'completed' | 'error';
-  progress: number;
-  videoId?: string;
-}
+import { toast } from '@/hooks/use-toast';
 
 interface VideoUploadProps {
-  onUpload?: (videoUrl: string) => void;
+  onUploaded?: (videoId: string) => void;
 }
 
-export function VideoUpload({ onUpload }: VideoUploadProps = {}) {
-  const [files, setFiles] = useState<UploadedFile[]>([]);
+export function VideoUpload({ onUploaded }: VideoUploadProps = {}) {
+  const [name, setName] = useState('');
+  const [file, setFile] = useState<File | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [status, setStatus] = useState<'idle' | 'uploading' | 'error'>('idle');
 
-
-  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = Array.from(e.target.files || []);
-    handleFiles(selectedFiles);
-  };
-
-  const handleFiles = async (fileList: File[]) => {
-    const newFiles: UploadedFile[] = fileList.map(file => ({
-      id: Math.random().toString(36).substr(2, 9),
-      name: file.name,
-      size: file.size,
-      status: 'uploading',
-      progress: 0
-    }));
-
-    setFiles(prev => [...prev, ...newFiles]);
-
-    // Process each file
-    for (let i = 0; i < newFiles.length; i++) {
-      const file = newFiles[i];
-      const actualFile = fileList[i];
-      
-      try {
-        await uploadToStorage(file.id, actualFile);
-      } catch (error) {
-        console.error('Upload failed:', error);
-        setFiles(prev => prev.map(f => 
-          f.id === file.id 
-            ? { ...f, status: 'error', progress: 0 }
-            : f
-        ));
-      }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      toast({ title: 'Name required', description: 'Please enter a name for this analysis.', variant: 'destructive' });
+      return;
     }
-  };
-
-  const uploadToStorage = async (fileId: string, file: File) => {
-    // Ensure user is authenticated (anonymous)
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      const { error: authError } = await supabase.auth.signInAnonymously();
-      if (authError) throw authError;
-      // Wait for auth to be established
-      await new Promise(resolve => setTimeout(resolve, 1000));
+    if (!file) {
+      toast({ title: 'Video required', description: 'Please choose a video file.', variant: 'destructive' });
+      return;
     }
 
-    const fileName = `original/${Date.now()}_${file.name}`;
-    
+    setStatus('uploading');
+    setProgress(10);
 
     try {
-      const { data, error } = await supabase.storage
+      const { data: { user } } = await supabase.auth.getUser();
+      let userId = user?.id;
+      if (!userId) {
+        const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
+        if (authError) throw authError;
+        userId = authData.user?.id;
+      }
+
+      const fileName = `original/${Date.now()}_${file.name}`;
+      setProgress(30);
+
+      const { error: uploadError } = await supabase.storage
         .from('videos')
         .upload(fileName, file);
+      if (uploadError) throw uploadError;
 
-      if (error) throw error;
+      setProgress(70);
+      const { data: { publicUrl } } = supabase.storage.from('videos').getPublicUrl(fileName);
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('videos')
-        .getPublicUrl(fileName);
-
-      // Insert video record into database
       const { data: videoData, error: dbError } = await supabase
         .from('videos')
         .insert({
+          name: name.trim(),
           filename: file.name,
           original_video_url: publicUrl,
-          user_id: user.id
+          status: 'Processing',
+          user_id: userId,
         })
         .select()
         .single();
+      if (dbError) throw dbError;
 
-      if (dbError) {
-        console.error('Database insert error:', dbError);
-        throw dbError;
-      }
+      setProgress(90);
 
-      setFiles(prev => prev.map(f => 
-        f.id === fileId 
-          ? { ...f, status: 'uploaded', progress: 100, videoId: videoData.id }
-          : f
-      ));
+      // Kick off processing (fire and forget — status updates come from DB polling)
+      supabase.functions.invoke('process-video', {
+        body: { video_url: publicUrl, video_id: videoData.id },
+      }).catch((err) => console.error('process-video invoke failed:', err));
 
-      // Start AI processing
-      setTimeout(() => {
-        processVideo(fileId, publicUrl, videoData.id);
-      }, 500);
-
-      // Call onUpload callback with Supabase URL
-      setTimeout(() => {
-        if (onUpload) {
-          onUpload(publicUrl);
-        }
-      }, 100);
-
-    } catch (error) {
-      throw error;
-    }
-  };
-
-  const processVideo = async (fileId: string, videoUrl: string, videoId: string) => {
-    try {
-      // Update status to processing
-      setFiles(prev => prev.map(f => 
-        f.id === fileId 
-          ? { ...f, status: 'processing', progress: 10 }
-          : f
-      ));
-      
-      // Call the edge function
-      const { data, error } = await supabase.functions.invoke('process-video', {
-        body: {
-          video_url: videoUrl,
-          video_id: videoId
-        }
-      });
-      
-      if (error) {
-        console.error('Processing error:', error);
-        setFiles(prev => prev.map(f => 
-          f.id === fileId 
-            ? { ...f, status: 'error', progress: 0 }
-            : f
-        ));
-        return;
-      }
-
-      // Poll for completion
-      let attempts = 0;
-      const maxAttempts = 60; // 2 minutes max
-  
-      const pollInterval = setInterval(async () => {
-        attempts++;
-
-        // Update progress based on time elapsed
-        const progress = Math.min(10 + (attempts / maxAttempts) * 80, 90);
-        setFiles(prev => prev.map(f => 
-          f.id === fileId ? { ...f, progress } : f
-        ));
-
-        // Check if processing is complete
-        const { data: video } = await supabase
-          .from('videos')
-          .select('detections_video_url, pose_video_url, all_video_url')
-          .eq('id', videoId)
-          .single();
-
-        if (video?.detections_video_url && video?.pose_video_url && video?.all_video_url) {
-          clearInterval(pollInterval);
-          setFiles(prev => prev.map(f => 
-            f.id === fileId 
-              ? { ...f, status: 'completed', progress: 100 }
-              : f
-          ));
-          return;
-        }
-
-        if (attempts >= maxAttempts) {
-          clearInterval(pollInterval);
-          setFiles(prev => prev.map(f => 
-            f.id === fileId 
-              ? { ...f, status: 'error', progress: 0 }
-              : f
-          ));
-        }
-      }, 2000); // Check every 2 seconds
-
-    } catch (error) {
-      console.error('Processing failed:', error);
-      setFiles(prev => prev.map(f => 
-        f.id === fileId 
-          ? { ...f, status: 'error', progress: 0 }
-          : f
-      ));
-    }
-  };
-  
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
-  const getStatusIcon = (status: UploadedFile['status']) => {
-    switch (status) {
-      case 'uploading':
-        return <Upload className="h-4 w-4 animate-pulse text-primary" />;
-      case 'uploaded':
-        return <CheckCircle className="h-4 w-4 text-success" />;
-      case 'processing':
-        return <Brain className="h-4 w-4 animate-pulse text-warning" />;
-      case 'completed':
-        return <CheckCircle className="h-4 w-4 text-success" />;
-      case 'error':
-        return <FileX className="h-4 w-4 text-destructive" />;
-      default:
-        return <Upload className="h-4 w-4" />;
+      setProgress(100);
+      onUploaded?.(videoData.id);
+    } catch (err: any) {
+      console.error('Upload failed:', err);
+      setStatus('error');
+      toast({ title: 'Upload failed', description: err.message ?? 'Something went wrong.', variant: 'destructive' });
     }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="text-center space-y-6">
-        <div>
-          <h2 className="text-2xl font-bold mb-2">Upload Your Fencing Video</h2>
-          <p className="text-muted-foreground max-w-md mx-auto">
-            Upload your fencing videos for AI-powered analysis. Get automatic detection of fencers, weapons, and pose estimation to improve your technique.
-          </p>
-        </div>
-        
-        <div className="space-y-4">
-          <Button variant="hero" size="lg" onClick={() => document.getElementById('file-input')?.click()}>
-            <Upload className="mr-2 h-4 w-4" />
-            Choose Video
-          </Button>
-          
-          <input
-            id="file-input"
-            type="file"
-            accept="video/*"
-            className="hidden"
-            onChange={handleFileInput}
-          />
-          
-          <div className="text-sm text-muted-foreground space-y-2">
-            <p className="font-medium">Requirements:</p>
-            <ul className="text-xs space-y-1">
-              <li>• MP4, MOV, or AVI format</li>
-              <li>• Maximum file size: 100MB</li>
-              <li>• Clear view of fencers and weapons</li>
-              <li>• Good lighting and resolution</li>
-              <li>• Videos under 60 seconds process faster</li>
-            </ul>
-          </div>
-        </div>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="text-center space-y-2">
+        <h2 className="text-2xl font-bold">Upload Your Fencing Video</h2>
+        <p className="text-muted-foreground max-w-md mx-auto">
+          Provide a name and upload your video for AI referee analysis.
+        </p>
       </div>
 
-      {files.length > 0 && (
-        <div className="space-y-3">
-          <h4 className="text-lg font-semibold">Uploaded Videos</h4>
-          {files.map((file) => (
-            <Card key={file.id} className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  {getStatusIcon(file.status)}
-                  <div>
-                    <p className="font-medium">{file.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {formatFileSize(file.size)} • {file.status}
-                    </p>
-                  </div>
-                </div>
-                
-                {(file.status === 'uploading' || file.status === 'processing') && (
-                  <div className="w-32">
-                    <Progress value={file.progress} className="h-2" />
-                    <p className="text-xs text-muted-foreground mt-1 text-center">
-                      {file.status === 'processing' ? 'Analyzing' : 'Uploading'} {Math.round(file.progress)}%
-                    </p>
-                  </div>
-                )}
-              </div>
-            </Card>
-          ))}
+      <Card className="p-6 space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="name">Name <span className="text-destructive">*</span></Label>
+          <Input
+            id="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Bout vs. Smith — Round 3"
+            maxLength={120}
+            disabled={status === 'uploading'}
+            required
+          />
         </div>
-      )}
-    </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="file">Video <span className="text-destructive">*</span></Label>
+          <Input
+            id="file"
+            type="file"
+            accept="video/*"
+            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            disabled={status === 'uploading'}
+            required
+          />
+          {file && (
+            <p className="text-xs text-muted-foreground">
+              {file.name} — {(file.size / (1024 * 1024)).toFixed(2)} MB
+            </p>
+          )}
+        </div>
+
+        <Button
+          type="submit"
+          variant="hero"
+          size="lg"
+          className="w-full"
+          disabled={status === 'uploading'}
+        >
+          {status === 'uploading' ? (
+            <><Upload className="mr-2 h-4 w-4 animate-pulse" /> Uploading…</>
+          ) : status === 'error' ? (
+            <><FileX className="mr-2 h-4 w-4" /> Try Again</>
+          ) : (
+            <><CheckCircle className="mr-2 h-4 w-4" /> Submit for Analysis</>
+          )}
+        </Button>
+
+        {status === 'uploading' && (
+          <div className="space-y-1">
+            <Progress value={progress} className="h-2" />
+            <p className="text-xs text-muted-foreground text-center">{progress}%</p>
+          </div>
+        )}
+      </Card>
+
+      <div className="text-xs text-muted-foreground text-center space-y-1">
+        <p>Requirements: MP4, MOV, or AVI • Max 100MB • Clear view of fencers</p>
+      </div>
+    </form>
   );
 }

@@ -16,35 +16,38 @@ export type Database = {
     Tables: {
       videos: {
         Row: {
-          all_video_url: string | null
+          annotated_video_url: string | null
           created_at: string
-          detections_video_url: string | null
           filename: string
           id: string
+          log_url: string | null
+          name: string
           original_video_url: string
-          pose_video_url: string | null
+          status: string
           updated_at: string
           user_id: string | null
         }
         Insert: {
-          all_video_url?: string | null
+          annotated_video_url?: string | null
           created_at?: string
-          detections_video_url?: string | null
           filename: string
           id?: string
+          log_url?: string | null
+          name: string
           original_video_url: string
-          pose_video_url?: string | null
+          status?: string
           updated_at?: string
           user_id?: string | null
         }
         Update: {
-          all_video_url?: string | null
+          annotated_video_url?: string | null
           created_at?: string
-          detections_video_url?: string | null
           filename?: string
           id?: string
+          log_url?: string | null
+          name?: string
           original_video_url?: string
-          pose_video_url?: string | null
+          status?: string
           updated_at?: string
           user_id?: string | null
         }
