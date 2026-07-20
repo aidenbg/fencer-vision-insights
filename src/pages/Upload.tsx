@@ -8,6 +8,9 @@ import { VideoPlayer } from '@/components/VideoPlayer';
 import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
+// Some upstream URLs come back with a trailing '?' which trips certain browsers/players.
+const cleanUrl = (u: string | null | undefined) => (u ? u.replace(/\?$/, '') : u);
+
 interface VideoData {
   id: string;
   name: string;
@@ -134,6 +137,27 @@ function ProcessingScreen({ video, onCancel }: { video: VideoData; onCancel: () 
 
 function ResultsScreen({ video, onNew }: { video: VideoData; onNew: () => void }) {
   const failed = video.status === 'Failed';
+  const annotatedUrl = cleanUrl(video.annotated_video_url);
+  const logUrl = cleanUrl(video.log_url);
+  const originalUrl = cleanUrl(video.original_video_url) as string;
+
+  const [logText, setLogText] = useState<string | null>(null);
+  const [logError, setLogError] = useState<string | null>(null);
+  const [logLoading, setLogLoading] = useState(false);
+
+  useEffect(() => {
+    if (!logUrl) return;
+    setLogLoading(true);
+    setLogError(null);
+    fetch(logUrl)
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`Failed to load log (${r.status})`);
+        return r.text();
+      })
+      .then((t) => setLogText(t))
+      .catch((e) => setLogError((e as Error).message))
+      .finally(() => setLogLoading(false));
+  }, [logUrl]);
 
   return (
     <div className="space-y-6">
@@ -159,12 +183,12 @@ function ResultsScreen({ video, onNew }: { video: VideoData; onNew: () => void }
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-2">
           <h3 className="text-lg font-semibold">Original</h3>
-          <VideoPlayer videoUrl={video.original_video_url} />
+          <VideoPlayer videoUrl={originalUrl} />
         </div>
         <div className="space-y-2">
           <h3 className="text-lg font-semibold">Annotated Referee</h3>
-          {video.annotated_video_url ? (
-            <VideoPlayer videoUrl={video.annotated_video_url} />
+          {annotatedUrl ? (
+            <VideoPlayer videoUrl={annotatedUrl} />
           ) : (
             <Card className="aspect-video flex items-center justify-center text-muted-foreground">
               Not available
@@ -173,17 +197,32 @@ function ResultsScreen({ video, onNew }: { video: VideoData; onNew: () => void }
         </div>
       </div>
 
-      {video.log_url && (
-        <Card className="p-4 flex items-center justify-between">
-          <div>
-            <p className="font-medium">Referee Log</p>
-            <p className="text-sm text-muted-foreground">Full text log of the AI referee's calls.</p>
+      {logUrl && (
+        <Card className="p-4 space-y-3">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <p className="font-medium">Referee Log</p>
+              <p className="text-sm text-muted-foreground">Full text log of the AI referee's calls.</p>
+            </div>
+            <Button variant="outline" asChild>
+              <a href={logUrl} download target="_blank" rel="noopener noreferrer">
+                <Download className="mr-2 h-4 w-4" /> Download .txt
+              </a>
+            </Button>
           </div>
-          <Button asChild>
-            <a href={video.log_url} download target="_blank" rel="noopener noreferrer">
-              <Download className="mr-2 h-4 w-4" /> Download .txt
-            </a>
-          </Button>
+          <div className="bg-muted rounded-md p-4 max-h-96 overflow-auto">
+            {logLoading && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" /> Loading log…
+              </div>
+            )}
+            {logError && (
+              <p className="text-sm text-destructive">Could not load log: {logError}</p>
+            )}
+            {logText !== null && (
+              <pre className="text-xs font-mono whitespace-pre-wrap break-words">{logText}</pre>
+            )}
+          </div>
         </Card>
       )}
     </div>
