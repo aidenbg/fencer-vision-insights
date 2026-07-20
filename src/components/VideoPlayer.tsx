@@ -15,6 +15,7 @@ export const VideoPlayer = ({ videoUrl, className = '' }: VideoPlayerProps) => {
   const [duration, setDuration] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const video = videoRef.current;
