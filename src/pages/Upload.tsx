@@ -8,6 +8,9 @@ import { VideoPlayer } from '@/components/VideoPlayer';
 import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
+// Some upstream URLs come back with a trailing '?' which trips certain browsers/players.
+const cleanUrl = (u: string | null | undefined) => (u ? u.replace(/\?$/, '') : u);
+
 interface VideoData {
   id: string;
   name: string;
