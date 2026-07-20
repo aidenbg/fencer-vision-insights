@@ -81,9 +81,19 @@ export const VideoPlayer = ({ videoUrl, className = '' }: VideoPlayerProps) => {
           src={videoUrl}
           className="absolute inset-0 w-full h-full"
           onEnded={() => setIsPlaying(false)}
+          onError={() => setError("This video couldn't be played in your browser. It may use an unsupported codec.")}
           preload="metadata"
           playsInline
+          controls
         />
+        {error && (
+          <div className="absolute inset-0 bg-background/90 flex flex-col items-center justify-center p-4 text-center gap-2">
+            <p className="text-sm text-destructive">{error}</p>
+            <a href={videoUrl} target="_blank" rel="noopener noreferrer" className="text-sm underline text-primary">
+              Open video in new tab
+            </a>
+          </div>
+        )}
       </div>
 
       <div className="p-4 space-y-3">
